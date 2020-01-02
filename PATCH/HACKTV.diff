@@ -1,7 +1,6 @@
-Binary files hacktv/.git/index and hacktv_patched/.git/index differ
-diff -uNr hacktv/Makefile hacktv_patched/Makefile
---- hacktv/Makefile	2020-01-02 14:02:33.989675800 +0100
-+++ hacktv_patched/Makefile	2020-01-02 12:50:00.520939900 +0100
+diff '--exclude=.git' -uNr hacktv/Makefile hacktv_patched/Makefile
+--- hacktv/Makefile	2020-01-02 15:05:33.408127300 +0100
++++ hacktv_patched/Makefile	2020-01-02 15:02:25.007889700 +0100
 @@ -3,7 +3,7 @@
  PKGCONF := $(CROSS_HOST)pkg-config
  CFLAGS  := -g -Wall -Wno-unused-result -pthread -O3 $(EXTRA_CFLAGS)
@@ -11,8 +10,8 @@ diff -uNr hacktv/Makefile hacktv_patched/Makefile
  PKGS    := libavcodec libavformat libavdevice libswscale libswresample libavutil libhackrf libavfilter $(EXTRA_PKGS)
  
  SOAPYSDR := $(shell $(PKGCONF) --exists SoapySDR && echo SoapySDR)
-diff -uNr hacktv/cards/funcard/Videocrypt-All-Modes-ATMEL.eep hacktv_patched/cards/funcard/Videocrypt-All-Modes-ATMEL.eep
---- hacktv/cards/funcard/Videocrypt-All-Modes-ATMEL.eep	2020-01-02 14:02:33.994662700 +0100
+diff '--exclude=.git' -uNr hacktv/cards/funcard/Videocrypt-All-Modes-ATMEL.eep hacktv_patched/cards/funcard/Videocrypt-All-Modes-ATMEL.eep
+--- hacktv/cards/funcard/Videocrypt-All-Modes-ATMEL.eep	2020-01-02 15:05:33.412116300 +0100
 +++ hacktv_patched/cards/funcard/Videocrypt-All-Modes-ATMEL.eep	1970-01-01 01:00:00.000000000 +0100
 @@ -1,5 +0,0 @@
 -:100000000100112233445566778899AABBCCDDEEF6
@@ -20,8 +19,8 @@ diff -uNr hacktv/cards/funcard/Videocrypt-All-Modes-ATMEL.eep hacktv_patched/car
 -:1000200019C1B0A3BB0CFD7072CA55EFA07FBF59B8
 -:01003000AD22
 -:00000001FF
-diff -uNr hacktv/cards/funcard/Videocrypt-All-Modes-ATMEL.hex hacktv_patched/cards/funcard/Videocrypt-All-Modes-ATMEL.hex
---- hacktv/cards/funcard/Videocrypt-All-Modes-ATMEL.hex	2020-01-02 14:02:33.995659700 +0100
+diff '--exclude=.git' -uNr hacktv/cards/funcard/Videocrypt-All-Modes-ATMEL.hex hacktv_patched/cards/funcard/Videocrypt-All-Modes-ATMEL.hex
+--- hacktv/cards/funcard/Videocrypt-All-Modes-ATMEL.hex	2020-01-02 15:05:33.413113800 +0100
 +++ hacktv_patched/cards/funcard/Videocrypt-All-Modes-ATMEL.hex	1970-01-01 01:00:00.000000000 +0100
 @@ -1,283 +0,0 @@
 -:100000000CC0189518951895189518951895189569
@@ -307,9 +306,9 @@ diff -uNr hacktv/cards/funcard/Videocrypt-All-Modes-ATMEL.hex hacktv_patched/car
 -:101180002D913C9148E050E060E070E041DEABED35
 -:0C119000B0E04D935D936D937D93089546
 -:00000001FF
-diff -uNr hacktv/cards/funcard/syster_atmega163.eep hacktv_patched/cards/funcard/syster_atmega163.eep
+diff '--exclude=.git' -uNr hacktv/cards/funcard/syster_atmega163.eep hacktv_patched/cards/funcard/syster_atmega163.eep
 --- hacktv/cards/funcard/syster_atmega163.eep	1970-01-01 01:00:00.000000000 +0100
-+++ hacktv_patched/cards/funcard/syster_atmega163.eep	2020-01-02 13:57:14.395569900 +0100
++++ hacktv_patched/cards/funcard/syster_atmega163.eep	2020-01-02 15:02:40.995487100 +0100
 @@ -0,0 +1,7 @@
 +:100000003322110077665544BBAA9988FFEEDDCCF8
 +:100010000001FFFF606A9F9581940001FFFF616B03
@@ -318,9 +317,9 @@ diff -uNr hacktv/cards/funcard/syster_atmega163.eep hacktv_patched/cards/funcard
 +:1000400074724B1D00010219011A011B011C0100F1
 +:0C005000A0021C381405FF14E1E50002BA
 +:00000001FF
-diff -uNr hacktv/cards/funcard/syster_atmega163.hex hacktv_patched/cards/funcard/syster_atmega163.hex
+diff '--exclude=.git' -uNr hacktv/cards/funcard/syster_atmega163.hex hacktv_patched/cards/funcard/syster_atmega163.hex
 --- hacktv/cards/funcard/syster_atmega163.hex	1970-01-01 01:00:00.000000000 +0100
-+++ hacktv_patched/cards/funcard/syster_atmega163.hex	2020-01-02 13:57:14.385595600 +0100
++++ hacktv_patched/cards/funcard/syster_atmega163.hex	2020-01-02 15:02:40.999478800 +0100
 @@ -0,0 +1,161 @@
 +:100000000C9466000C9478000C9478000C947800A2
 +:100010000C9478000C9478000C940D040C947800E7
@@ -483,9 +482,9 @@ diff -uNr hacktv/cards/funcard/syster_atmega163.hex hacktv_patched/cards/funcard
 +:1009E00031960DB20D9241505040B8F70895F894E9
 +:0209F000FFCF37
 +:00000001FF
-diff -uNr hacktv/cards/funcard/syster_xtea.eep hacktv_patched/cards/funcard/syster_xtea.eep
+diff '--exclude=.git' -uNr hacktv/cards/funcard/syster_xtea.eep hacktv_patched/cards/funcard/syster_xtea.eep
 --- hacktv/cards/funcard/syster_xtea.eep	1970-01-01 01:00:00.000000000 +0100
-+++ hacktv_patched/cards/funcard/syster_xtea.eep	2020-01-02 13:50:34.361783700 +0100
++++ hacktv_patched/cards/funcard/syster_xtea.eep	2020-01-02 15:02:41.001471100 +0100
 @@ -0,0 +1,7 @@
 +:100000003322110077665544BBAA9988FFEEDDCCF8
 +:100010000001FFFF606A9F9581940001FFFF616B03
@@ -494,9 +493,9 @@ diff -uNr hacktv/cards/funcard/syster_xtea.eep hacktv_patched/cards/funcard/syst
 +:1000400074724B1D00010219011A011B011C0100F1
 +:0C005000A0021C381405FF14E1E50002BA
 +:00000001FF
-diff -uNr hacktv/cards/funcard/syster_xtea.hex hacktv_patched/cards/funcard/syster_xtea.hex
+diff '--exclude=.git' -uNr hacktv/cards/funcard/syster_xtea.hex hacktv_patched/cards/funcard/syster_xtea.hex
 --- hacktv/cards/funcard/syster_xtea.hex	1970-01-01 01:00:00.000000000 +0100
-+++ hacktv_patched/cards/funcard/syster_xtea.hex	2020-01-02 13:50:34.352776500 +0100
++++ hacktv_patched/cards/funcard/syster_xtea.hex	2020-01-02 15:02:41.005465700 +0100
 @@ -0,0 +1,158 @@
 +:100000004EC05DC05CC05BC0FBC359C058C057C088
 +:1000100056C055C054C053C052C014C435C434C4B3
@@ -656,9 +655,9 @@ diff -uNr hacktv/cards/funcard/syster_xtea.hex hacktv_patched/cards/funcard/syst
 +:1009B000E199FECF06C0FFBBEEBBE09A31960DB2C7
 +:0E09C0000D9241505040B8F70895F894FFCFC3
 +:00000001FF
-diff -uNr hacktv/cards/funcard/vc_at90s8515.eep hacktv_patched/cards/funcard/vc_at90s8515.eep
+diff '--exclude=.git' -uNr hacktv/cards/funcard/vc_at90s8515.eep hacktv_patched/cards/funcard/vc_at90s8515.eep
 --- hacktv/cards/funcard/vc_at90s8515.eep	1970-01-01 01:00:00.000000000 +0100
-+++ hacktv_patched/cards/funcard/vc_at90s8515.eep	2020-01-02 13:54:01.720378400 +0100
++++ hacktv_patched/cards/funcard/vc_at90s8515.eep	2020-01-02 15:02:41.008455700 +0100
 @@ -0,0 +1,25 @@
 +:1000000065E7711AB488D77628D04C6E868CC843C1
 +:10001000A9EC604205F23D1C6CBCAFC32BB5DC9073
@@ -685,9 +684,9 @@ diff -uNr hacktv/cards/funcard/vc_at90s8515.eep hacktv_patched/cards/funcard/vc_
 +:100160006C9A99590A6C40D517B32C6941E8E70E8F
 +:100170003322110077665544BBAA9988FFEEDDCC87
 +:00000001FF
-diff -uNr hacktv/cards/funcard/vc_at90s8515.hex hacktv_patched/cards/funcard/vc_at90s8515.hex
+diff '--exclude=.git' -uNr hacktv/cards/funcard/vc_at90s8515.hex hacktv_patched/cards/funcard/vc_at90s8515.hex
 --- hacktv/cards/funcard/vc_at90s8515.hex	1970-01-01 01:00:00.000000000 +0100
-+++ hacktv_patched/cards/funcard/vc_at90s8515.hex	2020-01-02 13:54:01.708409700 +0100
++++ hacktv_patched/cards/funcard/vc_at90s8515.hex	2020-01-02 15:02:41.012442800 +0100
 @@ -0,0 +1,249 @@
 +:10000000C8C0E3C0E2C0E1C01BC6DFC0DEC0DDC0C7
 +:10001000DCC0DBC0DAC0D9C0D8C034C655C654C6AF
@@ -938,9 +937,9 @@ diff -uNr hacktv/cards/funcard/vc_at90s8515.hex hacktv_patched/cards/funcard/vc_
 +:060F6000ECCFF894FFCF76
 +:0E0F6600780000000000000000FF09090100F3
 +:00000001FF
-diff -uNr hacktv/cards/funcard/vc_atmega163.eep hacktv_patched/cards/funcard/vc_atmega163.eep
+diff '--exclude=.git' -uNr hacktv/cards/funcard/vc_atmega163.eep hacktv_patched/cards/funcard/vc_atmega163.eep
 --- hacktv/cards/funcard/vc_atmega163.eep	1970-01-01 01:00:00.000000000 +0100
-+++ hacktv_patched/cards/funcard/vc_atmega163.eep	2020-01-02 13:55:40.114885000 +0100
++++ hacktv_patched/cards/funcard/vc_atmega163.eep	2020-01-02 15:02:41.014442600 +0100
 @@ -0,0 +1,25 @@
 +:1000000065E7711AB488D77628D04C6E868CC843C1
 +:10001000A9EC604205F23D1C6CBCAFC32BB5DC9073
@@ -967,9 +966,9 @@ diff -uNr hacktv/cards/funcard/vc_atmega163.eep hacktv_patched/cards/funcard/vc_
 +:100160006C9A99590A6C40D517B32C6941E8E70E8F
 +:100170003322110077665544BBAA9988FFEEDDCC87
 +:00000001FF
-diff -uNr hacktv/cards/funcard/vc_atmega163.hex hacktv_patched/cards/funcard/vc_atmega163.hex
+diff '--exclude=.git' -uNr hacktv/cards/funcard/vc_atmega163.hex hacktv_patched/cards/funcard/vc_atmega163.hex
 --- hacktv/cards/funcard/vc_atmega163.hex	1970-01-01 01:00:00.000000000 +0100
-+++ hacktv_patched/cards/funcard/vc_atmega163.hex	2020-01-02 13:55:40.103883400 +0100
++++ hacktv_patched/cards/funcard/vc_atmega163.hex	2020-01-02 15:02:41.018427200 +0100
 @@ -0,0 +1,241 @@
 +:100000000C94E0000C94FD000C94FD000C94FD0099
 +:100010000C94FD000C94FD000C94FB050C94FD0069
@@ -1212,9 +1211,21 @@ diff -uNr hacktv/cards/funcard/vc_atmega163.hex hacktv_patched/cards/funcard/vc_
 +:0A0EE00050E00C945F07F894FFCF78
 +:0E0EEA00780000000000000000FF0909010070
 +:00000001FF
-diff -uNr hacktv/keyboard.c hacktv_patched/keyboard.c
+diff '--exclude=.git' -uNr hacktv/hacktv.c hacktv_patched/hacktv.c
+--- hacktv/hacktv.c	2020-01-02 15:05:33.429071000 +0100
++++ hacktv_patched/hacktv.c	2020-01-02 15:00:20.783939200 +0100
+@@ -540,7 +540,7 @@
+ 			break;
+ 		
+ 		case 'f': /* -f, --frequency <value> */
+-			s.frequency = atol(optarg);
++			s.frequency = (uint64_t) strtod(optarg, NULL);
+ 			break;
+ 		
+ 		case 'a': /* -a, --amp */
+diff '--exclude=.git' -uNr hacktv/keyboard.c hacktv_patched/keyboard.c
 --- hacktv/keyboard.c	1970-01-01 01:00:00.000000000 +0100
-+++ hacktv_patched/keyboard.c	2020-01-02 12:49:18.491247800 +0100
++++ hacktv_patched/keyboard.c	2020-01-02 15:02:41.020428200 +0100
 @@ -0,0 +1,22 @@
 +#include "keyboard.h"
 +
@@ -1238,9 +1249,9 @@ diff -uNr hacktv/keyboard.c hacktv_patched/keyboard.c
 +    ioctl(0, FIONREAD, &byteswaiting);
 +    return byteswaiting > 0;
 +}
-diff -uNr hacktv/keyboard.h hacktv_patched/keyboard.h
+diff '--exclude=.git' -uNr hacktv/keyboard.h hacktv_patched/keyboard.h
 --- hacktv/keyboard.h	1970-01-01 01:00:00.000000000 +0100
-+++ hacktv_patched/keyboard.h	2020-01-02 12:49:18.495270400 +0100
++++ hacktv_patched/keyboard.h	2020-01-02 15:02:41.023414800 +0100
 @@ -0,0 +1,15 @@
 +/*KEYBOARD*/
 +
@@ -1257,14 +1268,14 @@ diff -uNr hacktv/keyboard.h hacktv_patched/keyboard.h
 +extern _Bool _kbhit();
 +
 +#endif
-diff -uNr hacktv/play.sh hacktv_patched/play.sh
+diff '--exclude=.git' -uNr hacktv/play.sh hacktv_patched/play.sh
 --- hacktv/play.sh	1970-01-01 01:00:00.000000000 +0100
-+++ hacktv_patched/play.sh	2020-01-02 13:48:12.655554900 +0100
++++ hacktv_patched/play.sh	2020-01-02 15:02:41.026407800 +0100
 @@ -0,0 +1 @@
 +./hacktv -o - test -m pal -t uint8 --wss auto --videocrypt xtea | vlc --demux rawvideo --rawvid-fps 25 --rawvid-width 1024 --rawvid-height 625 --rawvid-chroma=GREY --rawvid-aspect-ratio 1:1 -
-diff -uNr hacktv/syster.c hacktv_patched/syster.c
---- hacktv/syster.c	2020-01-02 14:02:34.025581300 +0100
-+++ hacktv_patched/syster.c	2020-01-02 12:48:55.438966200 +0100
+diff '--exclude=.git' -uNr hacktv/syster.c hacktv_patched/syster.c
+--- hacktv/syster.c	2020-01-02 15:05:33.445029600 +0100
++++ hacktv_patched/syster.c	2020-01-02 15:02:41.035379400 +0100
 @@ -69,6 +69,19 @@
  #include "video.h"
  #include "vbidata.h"
@@ -1514,9 +1525,9 @@ diff -uNr hacktv/syster.c hacktv_patched/syster.c
  	
  	/* Swap the active line with the oldest line in the delay buffer,
  	 * with active video offset in j if necessary. */
-diff -uNr hacktv/videocrypt.c hacktv_patched/videocrypt.c
---- hacktv/videocrypt.c	2020-01-02 14:02:34.034555600 +0100
-+++ hacktv_patched/videocrypt.c	2020-01-02 13:46:06.316478600 +0100
+diff '--exclude=.git' -uNr hacktv/videocrypt.c hacktv_patched/videocrypt.c
+--- hacktv/videocrypt.c	2020-01-02 15:05:33.454004500 +0100
++++ hacktv_patched/videocrypt.c	2020-01-02 15:02:41.046352000 +0100
 @@ -47,7 +47,10 @@
  #include "video.h"
  
