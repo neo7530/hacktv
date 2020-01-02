@@ -1,22 +1,4 @@
 Binary files hacktv/.git/index and hacktv_patched/.git/index differ
-diff -uNr hacktv/.git/logs/HEAD hacktv_patched/.git/logs/HEAD
---- hacktv/.git/logs/HEAD	2020-01-02 14:02:33.955766800 +0100
-+++ hacktv_patched/.git/logs/HEAD	2020-01-02 11:51:48.639010800 +0100
-@@ -1 +1 @@
--0000000000000000000000000000000000000000 809ba8fc2069894a8a88885cba89045bddded500 neo7530 <marco@charlottenburg.exchange.alogis.com> 1577970153 +0100	clone: from https://github.com/neo7530/hacktv
-+0000000000000000000000000000000000000000 809ba8fc2069894a8a88885cba89045bddded500 neo7530 <marco@charlottenburg.exchange.alogis.com> 1577962308 +0100	clone: from https://github.com/neo7530/hacktv
-diff -uNr hacktv/.git/logs/refs/heads/master hacktv_patched/.git/logs/refs/heads/master
---- hacktv/.git/logs/refs/heads/master	2020-01-02 14:02:33.956764600 +0100
-+++ hacktv_patched/.git/logs/refs/heads/master	2020-01-02 11:51:48.639010800 +0100
-@@ -1 +1 @@
--0000000000000000000000000000000000000000 809ba8fc2069894a8a88885cba89045bddded500 neo7530 <marco@charlottenburg.exchange.alogis.com> 1577970153 +0100	clone: from https://github.com/neo7530/hacktv
-+0000000000000000000000000000000000000000 809ba8fc2069894a8a88885cba89045bddded500 neo7530 <marco@charlottenburg.exchange.alogis.com> 1577962308 +0100	clone: from https://github.com/neo7530/hacktv
-diff -uNr hacktv/.git/logs/refs/remotes/origin/HEAD hacktv_patched/.git/logs/refs/remotes/origin/HEAD
---- hacktv/.git/logs/refs/remotes/origin/HEAD	2020-01-02 14:02:33.947819900 +0100
-+++ hacktv_patched/.git/logs/refs/remotes/origin/HEAD	2020-01-02 11:51:48.632039100 +0100
-@@ -1 +1 @@
--0000000000000000000000000000000000000000 809ba8fc2069894a8a88885cba89045bddded500 neo7530 <marco@charlottenburg.exchange.alogis.com> 1577970153 +0100	clone: from https://github.com/neo7530/hacktv
-+0000000000000000000000000000000000000000 809ba8fc2069894a8a88885cba89045bddded500 neo7530 <marco@charlottenburg.exchange.alogis.com> 1577962308 +0100	clone: from https://github.com/neo7530/hacktv
 diff -uNr hacktv/Makefile hacktv_patched/Makefile
 --- hacktv/Makefile	2020-01-02 14:02:33.989675800 +0100
 +++ hacktv_patched/Makefile	2020-01-02 12:50:00.520939900 +0100
