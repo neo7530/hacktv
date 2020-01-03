@@ -1,3 +1,12 @@
+ forked from https://github.com/captainjack64/hacktv
+ 
+ To add my patches - do:
+ 
+ git clone https://github.com/neo7530/hacktv
+ patch -p 0 < ./hacktv/PATCH/PATCH.diff
+ 
+ then make it as usual.
+ 
  -[ HackTV - Analogue TV transmitter for the HackRF ]-
 
 This is a fork of https://github.com/fsphil/hacktv with some additional features
