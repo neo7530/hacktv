@@ -17,6 +17,15 @@ I will try and keep this as up to date as possible with official releases.
 
 **All credit for original code goes to author.**
 
+2020-01-07:
+All available Syster modes are now using random control words.
+See hacktv command line help for options.
+
+2020-01-06:
+Added Canal+ Poland key "free access" (audience 11) mode. Should work with most C+ PL keys.
+Added Canal+ France key "free access" (audience 11) mode. Should work with most C+ France keys.
+Fixed D11.
+
 2020-01-02:
 Added Syster DES function for random control words.
 'syster' parameter now requires 'premiere' or 'pirate' option.
