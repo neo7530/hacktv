@@ -502,7 +502,7 @@ uint16_t _get_date(char *dtm)
 {
 	int day, mon, year;
 	sscanf(dtm, "%d/%d/%d", &day, &mon, &year);
-	return (uint16_t) ((0x8000 | (year - 1990) << 9 | (mon > 6 ? 1:0) << 8 | ((mon > 6 ? 1:0) + mon % 7) << 5 | day) & 0x7FFF);
+	return (uint16_t) ((0x8000 | (year - 1990) << 9 | (mon > 6 ? 1:0) << 8 | ((mon > 6 ? 1:0) + mon % 7) << 5 | day)); // & 0x7FFF); MASK MUST NOT BE SET!
 }
 
 int _init_common(ng_t *s, char *mode)
@@ -511,25 +511,28 @@ int _init_common(ng_t *s, char *mode)
 	{
 		s->vbioffset = 0;
 		/* Free access key */
-		unsigned char k64[8] = { 0xC4,0xA5,0xA8,0x18,0x74,0x93,0xC7,0x65 };
+		//unsigned char k64[8] = { 0xC4,0xA5,0xA8,0x18,0x74,0x93,0xC7,0x65 };
+		/* CA-Keys */
+		unsigned char k64[8] = { 0x00,0x00,0x00,0x00,0x00,0x00,0x12,0x34 }; /* ca key0 */
+		//unsigned char k64[8] = { 0x00,0xe2,0x51,0x6D,0x15,0x97,0x51,0x55 }; /* ca key 1 */
 		
 		/*
 		   data[0] = window (operator?)
 		   data[1] = channel
 		   data[2] = audience (0x11 = free access)
 		   data[3] = ??
-		   data[4] = date
-		   data[5] = date
-		   data[6] = ??
-		   data[7] = ??
+		   data[4] = FF
+		   data[5] = FF => PPV-Mode
+		   data[6] = date
+		   data[7] = date => because of PPV mode
 		*/
-		unsigned char data[8] = { 0xFF,0x01,0x11,0x00,0x88,0x15,0x00,0x00 };
+		unsigned char data[8] = { 0xFF,0x01,0x00,0x00,0xFF,0xFF,0x00,0x00 };
 		
 		/* Date of broadcast */
-		uint16_t d = _get_date("01/01/1997");
+		uint16_t d = _get_date("01/12/1998");
 		
-		data[4] = d & 0xFF;
-		data[5] = d >> 8;
+		data[5] = d & 0xFF;
+		data[6] = d >> 8;
 		
 		/* 
 		   VBI offset:  0 = works with most keys
