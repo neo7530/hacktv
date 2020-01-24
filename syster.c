@@ -531,8 +531,8 @@ int _init_common(ng_t *s, char *mode)
 		/* Date of broadcast */
 		uint16_t d = _get_date("01/12/1998");
 		
-		data[5] = d & 0xFF;
-		data[6] = d >> 8;
+		data[6] = d & 0xFF;
+		data[7] = d >> 8;
 		
 		/* 
 		   VBI offset:  0 = works with most keys
