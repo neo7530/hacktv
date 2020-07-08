@@ -194,8 +194,8 @@ static int _prbs(uint16_t *x)
 	return(b);
 }
 
-/* Generate IW for CA PRBS2 for video scrambling */
-static uint64_t _prbs2_generate_iw(uint64_t cw, uint8_t fcnt)
+/* Generate IW for CA PRBS for video scrambling */
+static uint64_t _prbs_generate_iw(uint64_t cw, uint8_t fcnt)
 {
 	uint64_t iw;
 	
@@ -203,15 +203,24 @@ static uint64_t _prbs2_generate_iw(uint64_t cw, uint8_t fcnt)
 	iw  = ((fcnt ^ 0xFF) << 8) | fcnt;
 	iw |= (iw << 16) | (iw << 32) | (iw << 48);
 	
-	return((iw ^ cw) & MAC_PRBS2_CW_MASK);
+	return((iw ^ cw) & MAC_PRBS_CW_MASK);
 }
 
-/* Reset CA PRBS2 */
+/* Reset CA PRBS */
+static void _prbs1_reset(mac_t *s, uint8_t fcnt)
+{
+	uint64_t iw = _prbs_generate_iw(s->cw, fcnt);
+	
+	s->sr1 = iw & MAC_PRBS_SR3_MASK;
+	s->sr2 = (iw >> 31) & MAC_PRBS_SR4_MASK;
+}
+
 static void _prbs2_reset(mac_t *s, uint8_t fcnt)
 {
-	uint64_t iw = _prbs2_generate_iw(s->cw, fcnt);
-	s->sr1 = iw & MAC_PRBS2_SR1_MASK;
-	s->sr2 = (iw >> 31) & MAC_PRBS2_SR2_MASK;
+	uint64_t iw = _prbs_generate_iw(s->cw, fcnt);
+	
+	s->sr3 = iw & MAC_PRBS_SR3_MASK;
+	s->sr4 = (iw >> 31) & MAC_PRBS_SR4_MASK;
 }
 
 /* Return first x LSBs in b in reversed order. TODO: Remove this */
@@ -228,6 +237,35 @@ static uint64_t _rev(uint64_t b, int x)
 	return(r);
 }
 
+/* Update CA PRBS1 */
+static uint64_t _prbs1_update(mac_t *s)
+{
+	uint64_t code = 0;
+	int i;
+	
+	for(i = 0; i < 61; i++)
+	{
+		uint32_t a, b;
+		
+		/* Load the multiplexer address */
+		a  = (_rev(s->sr2, 29) << 0) & 0x03;
+		a |= (_rev(s->sr1, 31) << 2) & 0x1C;
+		
+		/* Load the multiplexer data */
+		b  = (_rev(s->sr2, 29) >> 2) & 0x000000FF;
+		b |= (_rev(s->sr1, 31) << 5) & 0xFFFFFF00;
+		
+		/* Shift into result register */
+		code = (code >> 1) | ((uint64_t) ((b >> a) & 1) << 60);
+		
+		/* Update shift registers */
+		s->sr1 = (s->sr1 >> 1) ^ (s->sr1 & 1 ? 0x78810820UL : 0);
+		s->sr2 = (s->sr2 >> 1) ^ (s->sr2 & 1 ? 0x17121100UL : 0);
+	}
+	
+	return(code);
+}
+
 /* Update CA PRBS2 */
 static uint16_t _prbs2_update(mac_t *s)
 {
@@ -239,15 +277,15 @@ static uint16_t _prbs2_update(mac_t *s)
 		int a;
 		
 		/* Load the multiplexer address */
-		a = _rev(s->sr2, 29) & 0x1F;
+		a = _rev(s->sr4, 29) & 0x1F;
 		if(a == 31) a = 30;
 		
 		/* Shift into result register */
-		code = (code >> 1) | (((_rev(s->sr1, 31) >> a) & 1) << 15);
+		code = (code >> 1) | (((_rev(s->sr3, 31) >> a) & 1) << 15);
 		
 		/* Update shift registers */
-		s->sr1 = (s->sr1 >> 1) ^ (s->sr1 & 1 ? 0x7BB88888UL : 0);
-		s->sr2 = (s->sr2 >> 1) ^ (s->sr2 & 1 ? 0x17A2C100UL : 0);
+		s->sr3 = (s->sr3 >> 1) ^ (s->sr3 & 1 ? 0x7BB88888UL : 0);
+		s->sr4 = (s->sr4 >> 1) ^ (s->sr4 & 1 ? 0x17A2C100UL : 0);
 	}
 	
 	return(code);
@@ -375,6 +413,36 @@ static void _bch_encode(uint8_t *data, int n, int k)
 	_bits(data, k, code, n - k);
 }
 
+/* Golay(24,12) protection */
+void mac_golay_encode(uint8_t *data, int blocks)
+{
+	uint8_t p[MAC_PAYLOAD_BYTES];
+	uint8_t *dst = p, *src = data;
+	int i;
+	
+	memset(p, 0, MAC_PAYLOAD_BYTES);
+	
+	for(i = 0; i < blocks; i += 2)
+	{
+		dst[0] = src[0];
+		dst[1] = src[1] & 0x0F;
+		dst[2]  = 0x00;
+		_bch_encode(dst, 23, 12);
+		dst[2] |= (_parity(dst[0] | (dst[1] << 8) | (dst[2] << 16)) ^ 1) << 7;
+		dst += 3;
+		
+		dst[0]  = (src[2] << 4) | (src[1] >> 4);
+		dst[1]  = src[2] >> 4;
+		dst[2]  = 0x00;
+		_bch_encode(dst, 23, 12);
+		dst[2] |= (_parity(dst[0] | (dst[1] << 8) | (dst[2] << 16)) ^ 1) << 7;
+		dst += 3;
+		src += 3;
+	}
+	
+	memcpy(data, p, blocks * 3);
+}
+
 static void _update_udt(uint8_t udt[25], time_t timestamp)
 {
 	struct tm tm;
@@ -453,8 +521,43 @@ static void _encode_packet(uint8_t *pkt, int address, int continuity, const uint
 	_interleave(pkt);
 }
 
+static void _scramble_packet(uint8_t *pkt, uint64_t iw)
+{
+	int x;
+	
+	for(x = 1; x < MAC_PAYLOAD_BYTES; x++)
+	{
+		int i;
+		uint8_t c = 0;
+		
+		/* PRBS3 */
+		for(i = 0; i < 8; i++)
+		{
+			uint32_t a, b;
+			
+			/* Load the multiplexer address */
+			a  = ((_rev(iw, 61) >>  4) & 1) << 0;
+			a |= ((_rev(iw, 61) >>  9) & 1) << 1;
+			a |= ((_rev(iw, 61) >> 14) & 1) << 2;
+			a |= ((_rev(iw, 61) >> 19) & 1) << 3;
+			a |= ((_rev(iw, 61) >> 24) & 1) << 4;
+			
+			/* Load the multiplexer data */
+			b = (_rev(iw, 61) >> 29) & 0xFFFFFFFF;
+			
+			/* Shift into result */
+			c = (c >> 1) | (((b >> a) & 1) << 7);
+			
+			/* Update shift registers */
+			iw = (iw >> 1) ^ (iw & 1 ? 0x163D23594C934051UL : 0);
+		}
+		
+		pkt[x] ^= c;
+	}
+}
+
 /* Packet reader. Returns a dummy packet if the queue is empty */
-static void _read_packet(mac_t *s, uint8_t *pkt, int subframe)
+static void _read_packet(mac_t *s, _mac_packet_queue_item_t *pkt, int subframe)
 {
 	mac_subframe_t *sf = &s->subframes[subframe];
 	int x;
@@ -462,14 +565,17 @@ static void _read_packet(mac_t *s, uint8_t *pkt, int subframe)
 	if(sf->queue.len == 0)
 	{
 		/* The packet queue is empty, generate a dummy packet */
-		_encode_packet(pkt, 0x3FF, sf->dummy_continuity++, NULL);
+		pkt->address = 0x3FF;
+		pkt->continuity = sf->dummy_continuity++;
+		pkt->scramble = 0;
+		memset(pkt->pkt, 0, MAC_PAYLOAD_BYTES);
 		return;
 	}
 	
 	x = sf->queue.p - sf->queue.len;
 	if(x < 0) x += MAC_QUEUE_LEN;
 	
-	memcpy(pkt, &sf->queue.pkts[x * MAC_PACKET_BYTES], MAC_PACKET_BYTES);
+	memcpy(pkt, &sf->queue.pkts[x], sizeof(_mac_packet_queue_item_t));
 	
 	sf->queue.len--;
 }
@@ -582,6 +688,20 @@ static void _create_si_dg3_packet(mac_t *s, uint8_t *pkt)
 	strcpy((char *) &pkt[x], _sname);
 	x += strlen(_sname);
 	
+	if(s->eurocrypt)
+	{
+		/* Parameter ACCM */
+		pkt[x++] = 0x88;
+		pkt[x++] = 0x03;        /* Packet length = 3 */
+		b  = 1 << 15;           /* 0: Absence of ECM, 1: Presence of ECM */
+		b |= 0 << 14;           /* 0: CW derived 'by other means', 1: CW derived from CAFCNT */
+		b |= 1 << 10;           /* Subframe related location - TDMCID 01 */
+		b |= s->ec.ecm_addr;    /* Address 346 */
+		pkt[x++] = (b & 0x00FF) >> 0;
+		pkt[x++] = (b & 0xFF00) >> 8;
+		pkt[x++] = 0x40;        /* Eurocrypt */
+	}
+	
 	/* Parameter VCONF */
 	pkt[x++] = 0x90;	/* PI Analogue TV picture (VCONF) */
 	pkt[x++] = 1;		/* LI Length (1 byte) */
@@ -669,8 +789,8 @@ static void _create_audio_si_packet(mac_t *s, uint8_t *pkt)
 	
 	b |= 0 <<  7; /* Level of error protection (0: first level, 1: second level) */
 	b |= 1 <<  6; /* Coding law (0: linear, 1: companded) */
-	b |= 0 <<  5; /* Controlled access (0: no, 1: yes) */
-	b |= 0 <<  4; /* Scrambling (0: no, 1: yes) */
+	b |= ((s->vsam & MAC_VSAM_CONTROLLED_ACCESS ? 1 : 0) & s->scramble_audio) << 5; /* Controlled access (0: no, 1: yes) */
+	b |= s->scramble_audio << 4; /* Scrambling (0: no, 1: yes) */
 	b |= 0 <<  3; /* Automatic mixing (0: mixing not intended, 1: mixing intended) */
 	b |= 4 <<  0; /* Audio config (0: 15 kHz mono, 2: 7 kHz mono, 4: 15 kHz stereo) */
 	b |= _parity(b) << 8; /* Parity bit */
@@ -719,7 +839,30 @@ int mac_init(vid_t *s)
 	
 	memset(mac, 0, sizeof(mac_t));
 	
-	mac->vsam = MAC_VSAM_FREE_ACCESS_SINGLE_CUT; /* <-- check the mac.h file for the options here */
+	mac->vsam = MAC_VSAM_FREE_ACCESS;
+	
+	/* Initalise Eurocrypt, if required */
+	if(s->conf.eurocrypt)
+	{
+		mac->vsam = MAC_VSAM_CONTROLLED_ACCESS;
+		mac->eurocrypt = 1;
+		i = eurocrypt_init(s, s->conf.eurocrypt);
+		
+		if(i != VID_OK)
+		{
+			return(i);
+		}
+	}
+	
+	/* Configure scrambling */
+	switch(s->conf.scramble_video)
+	{
+	default: mac->vsam |= MAC_VSAM_UNSCRAMBLED; break;
+	case 1:  mac->vsam |= MAC_VSAM_SINGLE_CUT; break;
+	case 2:  mac->vsam |= MAC_VSAM_DOUBLE_CUT; break;
+	}
+	
+	mac->scramble_audio = s->conf.scramble_audio;
 	
 	if(s->conf.mac_mode == MAC_MODE_D)
 	{
@@ -767,14 +910,16 @@ int mac_init(vid_t *s)
 	
 	/* Set the video properties */
 	s->active_width &= ~1;	/* Ensure the active width is an even number */
-	mac->chrominance_width = s->active_width / 2;
-	mac->chrominance_left  = round(s->sample_rate * (232.0 / MAC_CLOCK_RATE));
+	mac->chrominance_width = s->active_width / 2;	
+	mac->chrominance_left  = round(s->sample_rate * (233.5 / MAC_CLOCK_RATE));
 	mac->white_ref_left    = round(s->sample_rate * (371.0 / MAC_CLOCK_RATE));
 	mac->black_ref_left    = round(s->sample_rate * (533.0 / MAC_CLOCK_RATE));
 	mac->black_ref_right   = round(s->sample_rate * (695.0 / MAC_CLOCK_RATE));
 	
+	fprintf(stderr,"chroma start %d, chroma width %d, active start %d, active width %d", mac->chrominance_left, mac->chrominance_width, s->active_left, s->active_width );
+	
 	/* Setup PRBS */
-	mac->cw = MAC_PRBS2_CW_FA;
+	mac->cw = MAC_PRBS_CW_FA;
 	
 	/* Quick and dirty sample rate conversion array */
 	for(x = 0; x < MAC_WIDTH; x++)
@@ -782,7 +927,7 @@ int mac_init(vid_t *s)
 		mac->video_scale[x] = round((double) x * s->width / MAC_WIDTH);
 	}
 	
-	return(0);
+	return(VID_OK);
 }
 
 void mac_free(vid_t *s)
@@ -792,7 +937,7 @@ void mac_free(vid_t *s)
         free(mac->lut);
 }
 
-int mac_write_packet(vid_t *s, int subframe, int address, int continuity, const uint8_t *data)
+int mac_write_packet(vid_t *s, int subframe, int address, int continuity, const uint8_t *data, int scramble)
 {
 	mac_subframe_t *sf = &s->mac.subframes[subframe];
 	
@@ -802,9 +947,12 @@ int mac_write_packet(vid_t *s, int subframe, int address, int continuity, const 
 		return(-1);
 	}
 	
-	_encode_packet(&sf->queue.pkts[sf->queue.p++ * MAC_PACKET_BYTES], address, continuity, data);
+	sf->queue.pkts[sf->queue.p].address = address;
+	sf->queue.pkts[sf->queue.p].continuity = continuity;
+	memcpy(sf->queue.pkts[sf->queue.p].pkt, data, MAC_PAYLOAD_BYTES);
+	sf->queue.pkts[sf->queue.p].scramble = scramble;
 	
-	if(sf->queue.p == MAC_QUEUE_LEN)
+	if(++sf->queue.p == MAC_QUEUE_LEN)
 	{
 		sf->queue.p = 0;
 	}
@@ -823,12 +971,12 @@ int mac_write_audio(vid_t *s, const int16_t *audio)
 		/* Write out an SI Sound Interpretation
 		 * packet at least once per two frames */
 		_create_audio_si_packet(&s->mac, data);
-		mac_write_packet(s, 0, s->mac.audio_channel, s->mac.subframes[0].audio_continuity - 2, data);
+		mac_write_packet(s, 0, s->mac.audio_channel, s->mac.subframes[0].audio_continuity - 2, data, 0);
 	}
 	
 	/* Encode and write the audio packet */
 	nicam_encode_mac_packet(&s->mac.nicam, data, audio);
-	mac_write_packet(s, 0, s->mac.audio_channel, s->mac.subframes[0].audio_continuity++, data);
+	mac_write_packet(s, 0, s->mac.audio_channel, s->mac.subframes[0].audio_continuity++, data, s->mac.scramble_audio);
 	
 	return(0);
 }
@@ -848,6 +996,7 @@ static uint8_t _hsync_word(int frame, int line)
 static int _line(vid_t *s, uint8_t *data, int x)
 {
 	uint16_t poly = s->mac.prbs[s->line - 1];
+	uint64_t sr5 = 0;
 	int i, c;
 	
 	/* A regular line, contains a short data burst of 105/205 bits for D2/D */
@@ -860,6 +1009,8 @@ static int _line(vid_t *s, uint8_t *data, int x)
 		{
 			if(sf->pkt_bits == MAC_PACKET_BITS)
 			{
+				_mac_packet_queue_item_t pkt;
+				
 				if(s->line == 623)
 				{
 					/* Line 623 contains only the last 4 bits
@@ -868,7 +1019,21 @@ static int _line(vid_t *s, uint8_t *data, int x)
 				}
 				
 				/* Fetch the next packet */
-				_read_packet(&s->mac, sf->pkt, c);
+				_read_packet(&s->mac, &pkt, c);
+				
+				/* Optionally encrypt packet */
+				if(c == 0)
+				{
+					/* Generate I for PRBS3 - only do this on the first subframe */
+					sr5 = _prbs1_update(&s->mac);
+				}
+				
+				if(pkt.scramble)
+				{
+					_scramble_packet(pkt.pkt, sr5);
+				}
+				
+				_encode_packet(sf->pkt, pkt.address, pkt.continuity, pkt.pkt);
 				sf->pkt_bits = 0;
 			}
 			
@@ -955,7 +1120,7 @@ static int _line_625(vid_t *s, uint8_t *data, int x)
 	dx = _bits(df, dx, 1, 1);                          /* Rp Repacement */
 	dx = _bits(df, dx, 1, 1);                          /* Fp Fingerprint */
 	dx = _bits(df, dx, 3, 2);                          /* Unallocated, both bits set to 1 */
-	dx = _bits(df, dx, 0, 1);                          /* SIFT Service identification channel format */
+	dx = _bits(df, dx, 1, 1);                          /* SIFT Service identification channel format */
 	_bch_encode(df, 71, 57);
 	
 	ix = _bits_buf(il, ix, df, 71);
@@ -1061,19 +1226,15 @@ static void _rotate(vid_t *s, int x1, int x2, int xc)
 {
 	int x;
 	
-	xc -= 4;
+	xc = s->mac.video_scale[xc - 2];
 	
-	x1 = s->mac.video_scale[x1];
-	x2 = s->mac.video_scale[x2];
-	xc = s->mac.video_scale[xc];
-	
-	for(x = x1 - 4; x <= x2 + 4; x++)
+	for(x = s->mac.video_scale[x1 - 2]; x <= s->mac.video_scale[x2 + 2]; x++)
 	{
 		s->output[x * 2 + 1] = s->output[xc++ * 2];
-		 if(xc > x2) xc = x1;
+		if(xc > s->mac.video_scale[x2]) xc = s->mac.video_scale[x1];
 	}
 	
-	for(x = x1; x <= x2; x++)
+	for(x = s->mac.video_scale[x1 - 2]; x <= s->mac.video_scale[x2 + 2]; x++)
 	{
 		s->output[x * 2] = s->output[x * 2 + 1];
 	}
@@ -1093,9 +1254,17 @@ void mac_next_line(vid_t *s)
 	/* Move to the 0 line */
 	vid_adj_delay(s, 1);
 	
+	if(s->line == 1 && s->mac.eurocrypt)
+	{
+		eurocrypt_next_frame(s);
+	}
+	
 	if(s->line == 1)
 	{
 		uint8_t pkt[MAC_PACKET_BYTES];
+		
+		/* Reset PRBS for packet scrambling */
+		_prbs1_reset(&s->mac, s->frame - 1);
 		
 		/* Update the aspect ratio flag */
 		s->mac.ratio = (s->ratio <= (14.0 / 9.0) ? 0 : 1);
@@ -1109,11 +1278,11 @@ void mac_next_line(vid_t *s)
 			
 			_create_si_dg0_packet(&s->mac, pkt);
 			
-			mac_write_packet(s, 0, 0x000, 0, pkt);
+			mac_write_packet(s, 0, 0x000, 0, pkt, 0);
 			
 			if(s->conf.mac_mode == MAC_MODE_D)
 			{
-				mac_write_packet(s, 1, 0x000, 0, pkt);
+				mac_write_packet(s, 1, 0x000, 0, pkt, 0);
 			}
 			
 			break;
@@ -1121,7 +1290,7 @@ void mac_next_line(vid_t *s)
 		case 1: /* Write DG3 to 1st subframe */
 			
 			_create_si_dg3_packet(&s->mac, pkt);
-			mac_write_packet(s, 0, 0x000, 0, pkt);
+			mac_write_packet(s, 0, 0x000, 0, pkt, 0);
 			
 			break;
 		}
@@ -1252,8 +1421,6 @@ void mac_next_line(vid_t *s)
 		/* Reset CA PRBS2 at the beginning of each frame */
 		if(s->line == 1)
 		{
-			/* TODO: Update the CW for Controlled Access here */
-			
 			_prbs2_reset(&s->mac, s->frame - 1);
 		}
 		
@@ -1265,13 +1432,13 @@ void mac_next_line(vid_t *s)
 			if((s->mac.vsam & 2) == 0)
 			{
 				/* Double Cut rotation */
-				_rotate(s, 230 + 2 - 3,  587 - 3 - 4, 282 + ((prbs & 0xFF00) >> 8)); /* Colour-diff */
-				_rotate(s, 585 + 2 - 2, 1289 - 3 - 2, 682 + ((prbs & 0x00FF) << 1)); /* Luminance */
+				_rotate(s, 229,  580, 282 + ((prbs & 0xFF00) >> 8)); /* Colour-diff */
+				_rotate(s, 586, 1285, 682 + ((prbs & 0x00FF) << 1)); /* Luminance */
 			}
 			else
 			{
 				/* Single Cut rotation */
-				_rotate(s, 230 + 2 - 3, 1289 - 3 - 2, 282 + ((prbs & 0xFF00) >> 8));
+				_rotate(s, 230, 1285, 282 + ((prbs & 0xFF00) >> 8));
 			}
 		}
 	}

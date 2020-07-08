@@ -35,7 +35,7 @@
 
 #define VC_LEFT                120
 #define VC_RIGHT               (VC_LEFT + 710)
-#define VC_OVERLAP             15
+#define VC_OVERLAP             17
 #define VC_FIELD_1_START       24
 #define VC_FIELD_2_START       336
 #define VC_LINES_PER_FIELD     287
@@ -64,6 +64,8 @@ typedef struct {
 	uint8_t mode;
 	uint64_t codeword;
 	uint8_t messages[8][32];
+	/* Random bytes */
+	uint8_t b1, b2, b3;
 } _vc2_block_t;
 
 typedef struct {
@@ -95,16 +97,22 @@ typedef struct {
 	
 	int video_scale[VC_WIDTH];
 	
+	/* Random bytes */
+	uint8_t b1, b2, b3;
+	
 } vc_t;
 
 extern int vc_init(vc_t *s, vid_t *vs, const char *mode, const char *mode2);
 extern void vc_free(vc_t *s);
 extern void vc_render_line(vc_t *s, const char *mode, const char *mode2);
-extern void _vc_kernel07(uint64_t *out, int *oi, const unsigned char in, int offset, int ca);
-extern void _vc_kernel09(const unsigned char in, unsigned char *answ);
-extern void _vc_seed_sky07(_vc_block_t *s, int ca);
-extern void _vc_seed_vc2(_vc2_block_t *s);
-extern void _vc_seed_sky09(_vc_block_t *s);
-extern void _vc_seed_xtea(_vc_block_t *s);
+void _vc_kernel07(uint64_t *out, int *oi, const unsigned char in, int offset, int ca);
+void _vc_kernel09(const unsigned char in, unsigned char *answ);
+void _vc_seed_sky07(_vc_block_t *s, int ca);
+void _vc_emm07(_vc_block_t *s, int cmd, uint32_t cardserial);
+void _vc_emm09(_vc_block_t *s, int cmd, uint32_t cardserial);
+void _vc_seed_vc2(_vc2_block_t *s);
+void _vc2_emm(_vc2_block_t *s, int cmd, uint32_t cardserial);
+void _vc_seed_sky09(_vc_block_t *s);
+void _vc_seed_xtea(_vc_block_t *s);
 #endif
 

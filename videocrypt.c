@@ -46,9 +46,6 @@
 #include <math.h>
 #include "video.h"
 
-/* Experimental - Sky 06/07 mode channel ID */
-#define SKY07_CHID 0x00	
-
 /* Packet header sequences */
 static const uint8_t _sequence[8] = {
 	0x87,0x96,0xA5,0xB4,0xC3,0xD2,0xE1,0x87,
@@ -75,7 +72,7 @@ static _vc_block_t _sky07_blocks[] = {
 		{
  			{ 0x20 },
  			{ }, { }, { }, { },	{ },
- 			{ 0xE8,0x29,0x3E,0xED,0xF0,0x1C,0x01,0x6F,0xE9,0x06,0xD6 }
+ 			{ 0xE8,0x29,0x3E,0xED,0xF0,0x1C,0x00,0x6F,0xE9,0x06,0xD6 }
 		},
 	},
 	{
@@ -83,7 +80,7 @@ static _vc_block_t _sky07_blocks[] = {
 		{
  			{ 0x20,0x00,0x77,0x20,0x20,0x20,0x48,0x41,0x43,0x4b,0x54,0x56,0x20,0x20,0x20,0x20,0x53,0x4b,0x59,0x30,0x37,0x20,0x4d,0x4f,0x44,0x45 },
  			{ }, { }, { }, { },	{ },
- 			{ 0xE8,0x29,0x3E,0xED,0xF0,0x1C,0x01,0x6F,0xE9,0x06,0xD6 }
+ 			{ 0xE8,0x29,0x3E,0xED,0xF0,0x1C,0x00,0x6F,0xE9,0x06,0xD6 }
 		},
 	},
 };
@@ -273,12 +270,12 @@ static _vc2_block_t _vc2_blocks[] = {
 	{
 		0xA0, 0,
 		{
-			{ 0x21,0x02,0x6B,0x20,0x48,0x41,0x43,0x4b,0x54,0x56,0x20,0x56,0x43,0x32 },
+			{ 0x21,0x02,0x6B,0x4D,0x55,0x4C,0x54,0x49,0x43,0x48,0x4F,0x49,0x43,0x45},
 			{ 0xE1 },
 			{ 0xE1 },
 			{ 0xE1 },
 			{ 0xE1 },
-			{ 0xF9,0x62,0x36,0x82,0x04,0xF7,0x87,0x00,0x00,0x5A,0x06 },
+			{ 0xF9,0x52,0x80,0x80,0x04,0xF7,0xB7 },
 		}
 	},
 	{
@@ -289,7 +286,7 @@ static _vc2_block_t _vc2_blocks[] = {
 			{ 0xE1 },
 			{ 0xE1 },
 			{ 0xE1 },
-			{ 0xF9,0x62,0x56,0x82,0x04,0xF7,0x87,0x00,0x00,0xA5,0x06 },
+			{ 0xF9,0x52,0x80,0x80,0x04,0xF7,0xB7 },
 		}
 	},
 };
@@ -364,7 +361,7 @@ const unsigned char sky09_key[216] = {
 	0x17, 0xb3, 0x2c, 0x69, 0x41, 0xe8, 0xe7, 0x0e
 };
 
-/* Key used by Multichoice Central Europe broadcase in Videocrypt 2 */
+/* Key used by Multichoice Central Europe in Videocrypt 2 */
 const unsigned char vc2_key[] = {
     0x58,0x6B,0x4D,0x05,0xB0,0x69,0x83,0x16,
     0xA6,0x48,0xDE,0x5E,0x0B,0xAA,0x49,0xA9,
@@ -382,7 +379,7 @@ static uint8_t _crc(uint8_t *data)
 	int x;
 	uint8_t crc;
 
-	for(crc = x = 0; x < 31; x++) 
+	for(crc = x = 0; x < 31; x++)
 	{
 		crc += data[x];
 	}
@@ -521,6 +518,26 @@ int vc_init(vc_t *s, vid_t *vid, const char *mode, const char *mode2)
 		s->block_len = 2;
 		_vc_seed_sky07(&s->blocks[0], VC_SKY7);
 		_vc_seed_sky07(&s->blocks[1], VC_SKY7);
+		
+		if(s->vid->conf.enableemm)
+		{
+			/*  
+			 * 0x2C: allow Sky Multichannels
+			 * 0x20: Enable card
+			 */
+			_vc_emm07(&s->blocks[0],0x2C,s->vid->conf.enableemm);
+			_vc_emm07(&s->blocks[1],0x20,s->vid->conf.enableemm);
+		}
+		
+		if(s->vid->conf.disableemm)
+		{
+			/*  
+			 * 0x0C: switch off Sky Multichannels
+			 * 0x00: Disable card 
+			 */
+			_vc_emm07(&s->blocks[0],0x0C,s->vid->conf.disableemm);
+			_vc_emm07(&s->blocks[1],0x00,s->vid->conf.disableemm);
+		}
 	}
 	else if(strcmp(mode, "sky09") == 0)
 	{
@@ -528,6 +545,26 @@ int vc_init(vc_t *s, vid_t *vid, const char *mode, const char *mode2)
 		s->block_len = 2;
 		_vc_seed_sky09(&s->blocks[0]);
 		_vc_seed_sky09(&s->blocks[1]);
+		
+		if(s->vid->conf.enableemm)
+		{
+			/*  
+			 * 0x2C: allow Sky Multichannels
+			 * 0x20: Enable card
+			 */
+			_vc_emm09(&s->blocks[0],0x2C,s->vid->conf.enableemm);
+			_vc_emm09(&s->blocks[1],0x20,s->vid->conf.enableemm);
+		}
+		
+		if(s->vid->conf.disableemm)
+		{
+			/*  
+			 * 0x0C: switch off Sky Multichannels
+			 * 0x00: Disable card 
+			 */
+			_vc_emm09(&s->blocks[0],0x0C,s->vid->conf.disableemm);
+			_vc_emm09(&s->blocks[1],0x00,s->vid->conf.disableemm);
+		}
 	}
 	else if(strcmp(mode, "sky10") == 0)
 	{
@@ -549,21 +586,43 @@ int vc_init(vc_t *s, vid_t *vid, const char *mode, const char *mode2)
 		s->blocks    = _sky12_blocks;
 		s->block_len = 2;
 	}
-	else if (strcmp(mode, "tac1") == 0) 
+	else if (strcmp(mode, "tac1") == 0)
 	{
 		s->blocks    = _tac_blocks;
 		s->block_len = 2;
 		_vc_seed_sky07(&s->blocks[0], VC_TAC1);
 		_vc_seed_sky07(&s->blocks[1], VC_TAC1);
 	}
-	else if (strcmp(mode, "tac2") == 0) 
+	else if (strcmp(mode, "tac2") == 0)
 	{
 		s->blocks    = _tac_blocks;
 		s->block_len = 2;
 		_vc_seed_sky07(&s->blocks[0], VC_TAC2);
 		_vc_seed_sky07(&s->blocks[1], VC_TAC2);
+		
+		// /* Experimental EMMs for TAC cards */
+		// if(s->vid->conf.enableemm)
+		// {
+		// 	/*  
+		// 	 * 0x08: Unblock channel
+		// 	 * 0x09: Enable card
+		// 	 * 0x81: Set EXP date
+		// 	 */
+		// 	_vc_emm07(&s->blocks[0],0x08,s->vid->conf.enableemm);
+		// 	_vc_emm07(&s->blocks[1],0x09,s->vid->conf.enableemm);
+		// }
+		
+		// if(s->vid->conf.disableemm)
+		// {
+		// 	/*  
+		// 	 * 0x28: Block channel
+		// 	 * 0x29: Disable card
+		// 	 */
+		// 	_vc_emm07(&s->blocks[0],0x28,s->vid->conf.disableemm);
+		// 	_vc_emm07(&s->blocks[1],0x29,s->vid->conf.disableemm);
+		// }
 	}
-	else if (strcmp(mode, "xtea") == 0) 
+	else if (strcmp(mode, "xtea") == 0)
 	{
 		s->blocks    = _xtea_blocks;
 		s->block_len = 2;
@@ -595,6 +654,31 @@ int vc_init(vc_t *s, vid_t *vid, const char *mode, const char *mode2)
 		s->block2_len = 2;
 		_vc_seed_vc2(&s->blocks2[0]);
 		_vc_seed_vc2(&s->blocks2[1]);
+		
+		/* If in simulcrypt mode, do the initial CW sync here */
+		if(mode)
+		{
+			for(int i = 0; i < 8; i++)
+			{
+				s->blocks2[1].messages[0][i + 17] = (s->blocks[0].codeword ^ s->blocks2[1].codeword) >> (8 * i) & 0xFF;
+			}
+		}
+		
+		if(s->vid->conf.enableemm)
+		{
+			/*  
+			 * 0x1B: Enable card
+			 */
+			_vc2_emm(&s->blocks2[0],0x1B,s->vid->conf.enableemm);
+		}
+		
+		if(s->vid->conf.disableemm)
+		{
+			/*  
+			 * 0x1A: Disable card
+			 */
+			_vc2_emm(&s->blocks2[0],0x1A,s->vid->conf.disableemm);
+		}
 	}
 	else
 	{
@@ -629,8 +713,9 @@ void vc_free(vc_t *s)
 
 void vc_render_line(vc_t *s, const char *mode, const char *mode2)
 {
-	int x;
+	int i, x;
 	const uint8_t *bline = NULL;
+	uint64_t cw;
 	
 	/* On the first line of each frame, generate the VBI data */
 	if(s->vid->line == 1)
@@ -722,7 +807,7 @@ void vc_render_line(vc_t *s, const char *mode, const char *mode2)
 			{
 				s->cw = s->blocks[s->block].codeword;
 			}
-
+			
 			/* Generate new seeds */
 			if(mode)
 			{
@@ -731,6 +816,21 @@ void vc_render_line(vc_t *s, const char *mode, const char *mode2)
 				if(strcmp(mode,"sky07") == 0) _vc_seed_sky07(&s->blocks[s->block], VC_SKY7);
 				if(strcmp(mode,"sky09") == 0) _vc_seed_sky09(&s->blocks[s->block]);
 				if(strcmp(mode,"xtea") == 0)  _vc_seed_xtea(&s->blocks[s->block]);
+			}
+			
+			/* Print ECM */
+			if(s->vid->conf.showecm && mode)
+			{
+				fprintf(stderr, "\n\nVC1 ECM In:  ");
+				for(i = 0; i < 31; i++) fprintf(stderr, "%02X ", s->blocks[s->block].messages[6][i]);
+				fprintf(stderr,"\nVC1 ECM Out: ");
+				for(i = 0; i < 8; i++) fprintf(stderr, "%02llX ", s->cw >> (8 * i) & 0xFF);
+				
+				if(s->vid->conf.enableemm || s->vid->conf.disableemm)
+				{
+					fprintf(stderr, "\nVC1 EMM In:  ");
+					for(i = 0; i < 31; i++) fprintf(stderr, "%02X ", s->blocks[s->block].messages[1][i]);
+				}
 			}
 
 			/* Move to the next block */
@@ -743,8 +843,8 @@ void vc_render_line(vc_t *s, const char *mode, const char *mode2)
 		/* After 16 frames, apply the codeword */
 		if((s->counter & 0x0F) == 0)
 		{
-			/* Apply the current block codeword */
-			if(s->blocks2)
+			/* Apply the current block codeword only if not simulcrypting with VC1 */
+			if(s->blocks2 && !mode)
 			{
 				s->cw = s->blocks2[s->block2].codeword;
 			}
@@ -752,6 +852,33 @@ void vc_render_line(vc_t *s, const char *mode, const char *mode2)
 			if(mode2)
 			{
 				if(strcmp(mode2,"conditional") == 0) _vc_seed_vc2(&s->blocks2[s->block2]);
+				
+				/* OSD bytes 17 - 24 in OSD message 0x21 are used in seed generation in Videocrypt II. */
+				/* XOR with VC1 seed for simulcrypt. */
+				if(mode)
+				{
+					/* Hack to sync seeds with Videocrypt I */
+					cw = (s->counter % 0x3F < 0x0F || s->counter % 0x3F > 0x2F ? s->blocks[s->block].codeword : s->cw) ^ s->blocks2[s->block2].codeword;
+					for(i = 0; i < 8; i++)
+					{
+						s->blocks2[s->block2].messages[0][i + 17] = cw >> (8 * i) & 0xFF;
+					}
+				}
+			}
+			
+			/* Print ECM */
+			if(s->vid->conf.showecm && mode2)
+			{
+				fprintf(stderr, "\n\nVC2 ECM In:  ");
+				for(i = 0; i < 31; i++) fprintf(stderr, "%02X ", s->blocks2[s->block2].messages[5][i]);
+				fprintf(stderr,"\nVC2 ECM Out: ");
+				for(i = 0; i < 8; i++) fprintf(stderr, "%02llX ", s->blocks2[s->block2].codeword >> (8 * i) & 0xFF);
+				
+				if(s->vid->conf.enableemm || s->vid->conf.disableemm)
+				{
+					fprintf(stderr, "\nVC2 EMM In:  ");
+					for(i = 0; i < 31; i++) fprintf(stderr, "%02X ", s->blocks2[s->block2].messages[2][i]);
+				}
 			}
 			
 			/* Move to the next block after 64 frames */
@@ -838,6 +965,13 @@ void vc_render_line(vc_t *s, const char *mode, const char *mode2)
 			/* Shift into result register */
 			s->c = (s->c >> 1) | (((_rev(s->sr1, 31) >> a) & 1) << 15);
 		}
+		
+		/* Line 336 is scrambled into line 335, a VBI line. Mark it
+		 * as allocated to prevent teletext data appearing there */
+		if(s->vid->line == 336)
+		{
+			s->vid->vbialloclist[s->vid->odelay - 1] = 1;
+		}
 	}
 	
 	/* Hack to preserve WSS signal data */
@@ -869,6 +1003,60 @@ void vc_render_line(vc_t *s, const char *mode, const char *mode2)
 	vid_adj_delay(s->vid, 1);
 }
 
+void _vc_emm07(_vc_block_t *s, int cmd, uint32_t cardserial)
+{
+	int i;
+	int oi = 0;	
+	unsigned char a, b, xor[4];
+	uint64_t answ[8];
+	int offset = 0;
+	
+	int emmdata[7] = { 0xE0, 0x3F, 0x3E, 0xEC, 0x1C, 0x60, 0x0F };
+	
+	for(i = 0; i < 7; i++) s->messages[1][i] = emmdata[i];
+	
+	/* Sky 07 key offsets */
+	if (s->messages[1][1] > 0x32) offset = 0x08;
+	if (s->messages[1][1] > 0x3a) offset = 0x18;
+	
+	/* XOR round function */
+	a = s->messages[1][1] ^ s->messages[1][2];
+	a = _rnibble(a);
+	b = s->messages[1][2];
+	
+	for (i=0; i < 4;i++)
+	{
+		b = (b << 1) | (b >> 7);
+		b += a;
+		xor[i] = b;
+	}
+	
+	s->messages[1][3] =  cmd  ^ xor[0]; 
+	s->messages[1][7] =  0xA7 ^ xor[0];
+	s->messages[1][8] =  ((cardserial >> 24) & 0xFF) ^ xor[1];
+	s->messages[1][9] =  ((cardserial >> 16) & 0xFF) ^ xor[2];
+	s->messages[1][10] = ((cardserial >> 8)  & 0xFF) ^ xor[3];
+	s->messages[1][11] = ((cardserial >> 0)  & 0xFF);
+	for(i = 12; i < 27; i++) s->messages[1][i] = s->messages[1][11];
+	
+	/* Reset answers */
+	for (i = 0; i < 8; i++)  answ[i] = 0;
+	
+	for (i = 0; i < 27; i++) _vc_kernel07(answ, &oi, s->messages[1][i], offset, VC_SKY7);
+	
+	/* Calculate signature */
+	for (i = 27, b = 0; i < 31; i++)
+	{
+		_vc_kernel07(answ, &oi, b, offset, VC_SKY7);
+		_vc_kernel07(answ, &oi, b, offset, VC_SKY7);
+		b = s->messages[1][i] = answ[oi];
+		oi = (oi + 1) & 7;
+	}
+
+	/* Generate checksum */
+	s->messages[1][31] = _crc(s->messages[1]);
+	
+}
 void _vc_seed_sky07(_vc_block_t *s, int ca)
 {
 	int i;
@@ -876,34 +1064,31 @@ void _vc_seed_sky07(_vc_block_t *s, int ca)
 	unsigned char b;
 	uint64_t answ[8];
 	int offset = 0;
-
+	
 	if(ca == VC_TAC2)
 	/* TAC key offsets */
 	{
-		if (s->messages[6][1] > 0x33) offset = 0x08;
-		if (s->messages[6][1] > 0x3a) offset = 0x32;
-		if (s->messages[6][1] > 0x43) offset = 0x40;
-		if (s->messages[6][1] > 0x4a) offset = 0x48;
+		if (s->messages[6][1] > 0x3a) offset = 0x20;
+		if (s->messages[6][1] > 0x48) offset = 0x40;
 	}
 	else if (ca == VC_SKY7)
 	/* Sky 07 key offsets */
 	{
-		s->messages[6][6] = SKY07_CHID;
 		if (s->messages[6][1] > 0x32) offset = 0x08;
-  		if (s->messages[6][1] > 0x3a) offset = 0x18;
+		if (s->messages[6][1] > 0x3a) offset = 0x18;
 	}
-
+	
 	/* Change date code for old TAC cards */
 	if(ca == VC_TAC1) s->messages[6][1] = 0x29;
-
+	
 	/* Random seed for bytes 11 to 26 */
 	for(int i=11; i < 27; i++) s->messages[6][i] = rand() + 0xFF;
-
+	
 	/* Reset answers */
 	for (i = 0; i < 8; i++)  answ[i] = 0;
 	
 	for (i = 0; i < 27; i++) _vc_kernel07(answ, &oi, s->messages[6][i], offset, ca);
-
+	
 	/* Calculate signature */
 	for (i = 27, b = 0; i < 31; i++)
 	{
@@ -912,15 +1097,15 @@ void _vc_seed_sky07(_vc_block_t *s, int ca)
 		b = s->messages[6][i] = answ[oi];
 		oi = (oi + 1) & 7;
 	}
-
+	
 	/* Generate checksum */
 	s->messages[6][31] = _crc(s->messages[6]);
-
-	/* Iterate through _vc_kernel07 64 more times (99 in total) 
+	
+	/* Iterate through _vc_kernel07 64 more times (99 in total)
 	   Odd bug(?) in newer TAC card where checksum is always 0x0d */
 	for (i = 0; i < 64; i++)
 	{
-		_vc_kernel07(answ, &oi, (ca == VC_TAC2 && s->messages[6][1] > 0x30) ? 0x0d : s->messages[6][31], offset, ca);
+		_vc_kernel07(answ, &oi, (ca == VC_TAC2) ? 0x0d : s->messages[6][31], offset, ca);
 	}
 	
 	/* Mask high nibble of last byte as it's not used */
@@ -930,21 +1115,71 @@ void _vc_seed_sky07(_vc_block_t *s, int ca)
 	for(i = 0, s->codeword = 0; i < 8; i++)	s->codeword = answ[i] << (i * 8) | s->codeword;
 }
 
+void _vc2_emm(_vc2_block_t *s, int cmd, uint32_t cardserial)
+{
+	int i;
+	int oi = 0;	
+	uint64_t answ[8];
+	unsigned char a, b, xor[4];
+	
+	int emmdata[7] = { 0xE1,0x81,0x36,0x00,0xFF,0xFF,0xB4 };
+	
+	for(i = 0; i < 7; i++) s->messages[2][i] = emmdata[i];
+	
+	/* XOR round function */
+	a = s->messages[2][5] ^ s->messages[2][6];
+	a = _rnibble(a);
+	b = s->messages[2][6];
+
+	for (i = 0; i < 4;i++)
+	{
+		b = (b << 1) | (b >> 7);
+		b += a;
+		xor[i] = b;
+	}
+	
+	s->messages[2][3]  = cmd  ^ xor[0]; 
+	s->messages[2][7]  = 0x81 ^ xor[0];
+	s->messages[2][8]  = ((cardserial >> 24) & 0xFF) ^ xor[1];
+	s->messages[2][9]  = ((cardserial >> 16) & 0xFF) ^ xor[2];
+	s->messages[2][10] = ((cardserial >> 8)  & 0xFF) ^ xor[3];
+	s->messages[2][11] = ((cardserial >> 0)  & 0xFF);
+	
+	for(i = 12; i < 20; i++) s->messages[2][i] = s->messages[2][11];
+	
+	/* Reset answers */
+	for (i = 0; i < 8; i++)  answ[i] = 0;
+	
+	for (i = 0; i < 27; i++) _vc_kernel07(answ, &oi, s->messages[2][i], 0, VC2_MC);
+	
+	/* Calculate signature */
+	for (i = 27, b = 0; i < 31; i++)
+	{
+		_vc_kernel07(answ, &oi, b, 0, VC2_MC);
+		_vc_kernel07(answ, &oi, b, 0, VC2_MC);
+		b = s->messages[2][i] = answ[oi];
+		oi = (oi + 1) & 7;
+	}
+	
+	/* Generate checksum */
+	s->messages[2][31] = _crc(s->messages[2]);
+}
+
 void _vc_seed_vc2(_vc2_block_t *s)
 {
 	int i;
 	int oi = 0;	
 	unsigned char b;
 	uint64_t answ[8];
-
-	/* Random seed for bytes 11 to 26 */
-	for(int i=11; i < 27; i++) s->messages[5][i] = rand() + 0xFF;
-
+	
+	/* Random seed for bytes 19 to 26 */
+	for(int i=20; i < 27; i++) s->messages[5][i] = rand() + 0xFF;
+	
 	/* Reset answers */
 	for (i = 0; i < 8; i++)  answ[i] = 0;
 	
 	for (i = 0; i < 27; i++) _vc_kernel07(answ, &oi, s->messages[5][i], 0, VC2_MC);
-
+	
 	/* Calculate signature */
 	for (i = 27, b = 0; i < 31; i++)
 	{
@@ -953,10 +1188,10 @@ void _vc_seed_vc2(_vc2_block_t *s)
 		b = s->messages[5][i] = answ[oi];
 		oi = (oi + 1) & 7;
 	}
-
+	
 	/* Generate checksum */
 	s->messages[5][31] = _crc(s->messages[5]);
-
+	
 	for (i = 0; i < 64; i++)
 	{
 		_vc_kernel07(answ, &oi, s->messages[5][31], 0, VC2_MC);
@@ -968,10 +1203,6 @@ void _vc_seed_vc2(_vc2_block_t *s)
 	/* Reverse calculated control word */
 	for(i = 0, s->codeword = 0; i < 8; i++)	
 	{
-		/* Random bytes 17 - 24 in OSD message 0x21 used in seed generation in Videocrypt II */
-		s->messages[0][i + 17] = rand() + 0xFF;
-		answ[i] ^= s->messages[0][i + 17];
-		
 		s->codeword = answ[i] << (i * 8) | s->codeword;
 	}
 }
@@ -979,14 +1210,14 @@ void _vc_seed_vc2(_vc2_block_t *s)
 void _vc_kernel07(uint64_t *out, int *oi, const unsigned char in, int offset, int ca)
 {
 	unsigned char b, c;
-
-  	unsigned char key[32];
-
-	if(ca == VC_SKY7) 
+	
+	unsigned char key[32];
+	
+	if(ca == VC_SKY7)
 	{
 		memcpy(key, sky07_key + offset, 32);
 	}
-	else if(ca == VC2_MC) 
+	else if(ca == VC2_MC)
 	{
 		memcpy(key, vc2_key, 32);
 	}
@@ -994,17 +1225,63 @@ void _vc_kernel07(uint64_t *out, int *oi, const unsigned char in, int offset, in
 	{
 		memcpy(key, tac_key + offset, 32);
 	}
+	
+	out[*oi] ^= in;
+	b = key[(out[*oi] >> 4)];
+	c = key[(out[*oi] & 0x0F) + 16];
+	c = ~(c + b);
+	c = (c << 1) | (c >> 7);
+	c += in;
+	c = (c << 1) | (c >> 7);
+	c = _rnibble(c);
+	*oi = (*oi + 1) & 7;
+	out[*oi] ^= c;
+}
 
-  	out[*oi] ^= in;
-  	b = key[(out[*oi] >> 4)];
-  	c = key[(out[*oi] & 0x0F) + 16];
-  	c = ~(c + b);
-  	c = (c << 1) | (c >> 7);   
-  	c += in;
-  	c = (c << 1) | (c >> 7);    
-  	c = (c >> 4) | (c << 4);    
-  	*oi = (*oi + 1) & 7;
-  	out[*oi] ^= c;
+void _vc_emm09(_vc_block_t *s, int cmd, uint32_t cardserial)
+{
+	int i;
+	unsigned char a, b, xor[4], answ[8];
+	
+	int emmdata[7] = { 0xE1, 0x52, 0x01, 0x25, 0x80, 0xFF, 0x20 };
+	
+	for(i = 0; i < 7; i++) s->messages[1][i] = emmdata[i];
+	
+	/* XOR round function */
+	a = s->messages[1][1] ^ s->messages[1][2];
+	a = _rnibble(a);
+	b = s->messages[1][2];
+
+	for (i=0; i < 4;i++)
+	{
+		b = (b << 1) | (b >> 7);
+		b += a;
+		xor[i] = b;
+	}
+	
+	s->messages[1][3] =  cmd  ^ xor[0];
+	s->messages[1][7] =  0xA9 ^ xor[0];
+	s->messages[1][8] =  ((cardserial >> 24) & 0xFF) ^ xor[1];
+	s->messages[1][9] =  ((cardserial >> 16) & 0xFF) ^ xor[2];
+	s->messages[1][10] = ((cardserial >> 8)  & 0xFF) ^ xor[3];
+	s->messages[1][11] = ((cardserial >> 0)  & 0xFF);
+	for(i = 12; i < 27; i++) s->messages[1][i] = s->messages[1][11];
+	
+	/* Reset answers */
+	for (i = 0; i < 8; i++) answ[i] = 0;
+	
+	for (i = 0; i < 27; i++) _vc_kernel09(s->messages[1][i],answ);
+	
+	/* Calculate signature */
+	for (i = 27, b = 0; i < 31; i++)
+	{
+		_vc_kernel09(b, answ);
+		_vc_kernel09(b, answ);
+		b = s->messages[1][i] = answ[7];
+	}
+	
+	/* Generate checksum */
+	s->messages[1][31] = _crc(s->messages[1]);
 }
 
 void _vc_seed_sky09(_vc_block_t *s)
@@ -1050,58 +1327,59 @@ void _vc_seed_sky09(_vc_block_t *s)
 void _vc_kernel09(const unsigned char in, unsigned char *answ)
 {
 	unsigned char a, b, c, d;
-  	unsigned short m;
-  	int i;
+	unsigned short m;
+	int i;
 
-  	a = in;
-  	for (i = 0; i <= 4; i += 2) 
-  	{
+	a = in;
+	for (i = 0; i <= 4; i += 2)
+	{
 		b = answ[i] & 0x3F;
-    	b =  sky09_key[b] ^ sky09_key[b + 0x98];
-    	c = a + b - answ[i+1];
-    	d = (answ[i] - answ[i+1]) ^ a;
-    	m = d * c;
-    	answ[i + 2] ^= (m & 0xFF);
-    	answ[i + 3] += m >> 8;
-    	a = (a << 1) | (a >> 7);
-    	a += 0x49;
-  	}
+		b =  sky09_key[b] ^ sky09_key[b + 0x98];
+		c = a + b - answ[i+1];
+		d = (answ[i] - answ[i+1]) ^ a;
+		m = d * c;
+		answ[i + 2] ^= (m & 0xFF);
+		answ[i + 3] += m >> 8;
+		a = (a << 1) | (a >> 7);
+		a += 0x49;
+	}
 
-  	m = answ[6] * answ[7];
-  	a = (m & 0xFF) + answ[0];
-  	if (a < answ[0]) a++;
-  	answ[0] = a + 0x39;
-  	a = (m >> 8) + answ[1];
-  	if (a < answ[1]) a++;
-  	answ[1] = a + 0x8F;
+	m = answ[6] * answ[7];
+	a = (m & 0xFF) + answ[0];
+	if (a < answ[0]) a++;
+	answ[0] = a + 0x39;
+	a = (m >> 8) + answ[1];
+	if (a < answ[1]) a++;
+	answ[1] = a + 0x8F;
 }
 
 void _vc_seed_xtea(_vc_block_t *s)
 {
 	/* Random seed for bytes 11 to 31 */
 	for(int i=11; i < 32; i++) s->messages[6][i] = rand() + 0xFF;
-
+	
 	int i;
 	uint32_t v0, v1, sum = 0;
 	uint32_t delta = 0x9E3779B9;
 	
 	s->messages[6][6] = 0x63;
-
-	memcpy(&v1,&s->messages[6][11],4);
- 	memcpy(&v0,&s->messages[6][15],4);
-
+	
+	memcpy(&v1, &s->messages[6][11], 4);
+	memcpy(&v0, &s->messages[6][15], 4);
+	
 	for (i = 0; i < 32;i++)
 	{
-		v0 += (((v1 << 4) ^ (v1 >> 5)) + v1) ^ (sum + xtea_key[sum & 3]);
+		v0  += (((v1 << 4) ^ (v1 >> 5)) + v1) ^ (sum + xtea_key[sum & 3]);
 		sum += delta;
-		v1 += (((v0 << 4) ^ (v0 >> 5))+v0) ^ (sum + xtea_key[(sum>>11) & 3]);
-
+		v1  += (((v0 << 4) ^ (v0 >> 5)) + v0) ^ (sum + xtea_key[(sum >> 11) & 3]);
+	
 		if(i == 7)
 		{
-			memcpy(&s->messages[6][19],&v1,4);
-			memcpy(&s->messages[6][23],&v0,4);
+			memcpy(&s->messages[6][19], &v1, 4);
+			memcpy(&s->messages[6][23], &v0, 4);
 		}
 	}
+	
 	/* Reverse calculated control word */
-	s->codeword = ((uint64_t)v0 << 32 | v1) & 0x0fffffffffffffffUL;
+	s->codeword = ((uint64_t) v0 << 32 | v1) & 0x0fffffffffffffffUL;
 }

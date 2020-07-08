@@ -71,10 +71,14 @@ typedef struct {
 	char *videocrypts;
 	char *syster;
 	int systeraudio;
+	char *eurocrypt;
 	int acp;
 	int filter;
+	int subtitles;
 	int noaudio;
 	int nonicam;
+	int scramble_video;
+	int scramble_audio;
 	uint64_t frequency;
 	int amp;
 	int gain;
@@ -82,6 +86,9 @@ typedef struct {
 	int file_type;
 	int timestamp;
 	int position;
+	uint32_t enableemm;
+	uint32_t disableemm;
+	int showecm;
 	
 	/* Video encoder state */
 	vid_t vid;
