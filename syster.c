@@ -511,11 +511,7 @@ int _init_common(ng_t *s, char *mode)
 	{
 		s->vbioffset = 0;
 		/* Free access key */
-		//unsigned char k64[8] = { 0xC4,0xA5,0xA8,0x18,0x74,0x93,0xC7,0x65 };
-		/* CA-Keys */
-		unsigned char k64[8] = { 0x00,0x00,0x00,0x00,0x00,0x00,0x12,0x34 }; /* ca key0 */
-		//unsigned char k64[8] = { 0x00,0xe2,0x51,0x6D,0x15,0x97,0x51,0x55 }; /* ca key 1 */
-		
+		unsigned char k64[8] = { 0xC4,0xA5,0xA8,0x18,0x74,0x93,0xC7,0x65 };
 		/*
 		   data[0] = window (operator?)
 		   data[1] = channel
@@ -527,12 +523,6 @@ int _init_common(ng_t *s, char *mode)
 		   data[7] = date => because of PPV mode
 		*/
 		unsigned char data[8] = { 0xFF,0x01,0x00,0x00,0xFF,0xFF,0x00,0x00 };
-		
-		/* Date of broadcast */
-		uint16_t d = _get_date("01/12/1998");
-		
-		data[6] = d & 0xFF;
-		data[7] = d >> 8;
 		
 		/* 
 		   VBI offset:  0 = works with most keys
