@@ -70,6 +70,11 @@
 #include "vbidata.h"
 #include "syster-ca.h"
 
+
+FILE *filep = NULL;
+_Bool fileopen;
+_Bool fileerr;
+
 /* 0 - 12.8 kHz complex FIR filter taps, sample rate 32 kHz */
 
 #define NTAPS 771
@@ -401,7 +406,11 @@ int _ng_vbi_init(ng_t *s, vid_t *vid)
 void _render_ng_vbi(ng_t *s, int line, int mode)
 {
 	int x;
-	
+	uint8_t _emm1[73] = {0};
+	uint8_t _emm2[73] = {0};
+	int idx = 0;
+	time_t now = time(NULL);  //debug timestamp
+
 	ng_mode_t n = _ng_modes[s->id];
 	
 	/* Render the VBI data */
@@ -411,21 +420,53 @@ void _render_ng_vbi(ng_t *s, int line, int mode)
 	
 	if(line == 14 + n.vbioffset|| line == 15 + n.vbioffset|| line == 327 + n.vbioffset || line == 328 + n.vbioffset)
 	{
-		
+
 		if(s->vbi_seq == 0)
 		{
 			const uint8_t *emm1 = _dummy_emm;
 			const uint8_t *emm2 = _dummy_emm;
 			uint8_t msg1[NG_MSG_BYTES];
 			uint8_t msg2[NG_MSG_BYTES];
-			
+
+			char _temm1[800] = {0};
+			char _temm2[800] = {0};
+
+			if((!fileopen) && (!fileerr)){
+				filep = fopen("./emm.txt", "rt");
+				if(filep == NULL){
+					fprintf(stderr,"\n\nemm.txt not found!\n\n");
+					fileerr = 1;
+				} else {
+					fprintf(stderr,"\n\nemm.txt opened ");
+					fprintf(stderr, "%s\n\n", ctime(&now));
+					fileopen = 1;
+				}
+			}
+
+			if(fileopen){
+				fgets(_temm1,500,filep);
+				fgets(_temm2,500,filep);
+
+				for(idx = 0;idx < 72;idx++){
+					sscanf(&_temm1[idx*5],"0x%02x,",&_emm1[idx]);
+					sscanf(&_temm2[idx*5],"0x%02x,",&_emm2[idx]);
+				}
+
+				if(feof(filep)){
+					fprintf(stderr,"\n\nemm.txt end reached, restarting... ");
+					fprintf(stderr, "%s", ctime(&now));
+					fseek( filep, 0, SEEK_SET );
+				}
+
+			}
+
 			/* Transmit the PPUA EMM every 1000 frames */
 			if(s->vid->frame > s->next_ppua)
 			{
 				emm1 = _ppua_emm;
 				s->next_ppua = s->vid->frame + 1000;
 			}
-			
+
 			/* Build part 1 of the VBI block */
 			msg1[ 0] = mode | ((n.data[2] >> 5) & 1);    /* Decoder parameters + audience */
 			_ecm_part(s, &msg1[1]);
@@ -435,8 +476,12 @@ void _render_ng_vbi(ng_t *s, int line, int mode)
 			{
 				msg1[11] ^= msg1[x];
 			}
-			memcpy(&msg1[12], emm1, 72);
-			
+			if(fileopen){
+				memcpy(&msg1[12], _emm1, 72);
+			} else {
+				memcpy(&msg1[12], emm1, 72);
+			}
+
 			/* Build part 2 of the VBI block */
 			msg2[ 0] = 0xFE;                             /* ??? Premiere DE: 0xFE, Canal+ PL: 0x00, HTB+: 0x01 */
 			msg2[ 1] = 0x28 | ((mode >> 2) & 1);         /* ??? Premiere DE: 0x28 (cut and rotate: 0x29), Canal+ PL: 0x2A, HTB+: 0x3A */
@@ -450,8 +495,12 @@ void _render_ng_vbi(ng_t *s, int line, int mode)
 			msg2[ 9] = 0x00;
 			msg2[10] = 0x00;
 			msg2[11] = 0x00;
-			memcpy(&msg2[12], emm2, 72);
-			
+			if(fileopen){
+				memcpy(&msg2[12], _emm2, 72);
+			} else {
+				memcpy(&msg2[12], emm2, 72);
+			}
+
 			/* Pack the messages into the next 10 VBI lines */
 			_pack_vbi_block(s->vbi, msg1, msg2);
 			
