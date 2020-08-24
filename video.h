@@ -20,6 +20,7 @@
 
 #include <stdint.h>
 #include "nicam728.h"
+#include "dance.h"
 #include "fir.h"
 
 typedef struct vid_t vid_t;
@@ -48,6 +49,7 @@ typedef struct vid_t vid_t;
 #define VID_BAIRD_30   5
 #define VID_APOLLO_320 6
 #define VID_MAC        7
+#define VID_CBS_405    8
 
 /* Output modulation types */
 #define VID_NONE 0
@@ -61,6 +63,7 @@ typedef struct vid_t vid_t;
 #define VID_NTSC       2
 #define VID_SECAM      3
 #define VID_APOLLO_FSC 4
+#define VID_CBS_FSC    5
 
 /* AV source function prototypes */
 typedef uint32_t *(*vid_read_video_t)(void *private, float *ratio);
@@ -112,6 +115,7 @@ typedef struct {
 	double fm_audio_level;
 	double am_audio_level;
 	double nicam_level;
+	double dance_level;
 	
 	/* Video */
 	int type;
@@ -120,7 +124,9 @@ typedef struct {
 	int frame_rate_den;
 	
 	int lines;
+	int hline;
 	int active_lines;
+	int interlace;
 	
 	double hsync_width;
 	double vsync_short_width;
@@ -143,6 +149,8 @@ typedef struct {
 	char *mode;
 	
 	char *wss;
+	int letterbox;
+	int pillarbox;
 	
 	char *videocrypt;
 	char *videocrypt2;
@@ -150,7 +158,10 @@ typedef struct {
 	uint32_t enableemm;
 	uint32_t disableemm;
 	int showecm;
+	int showserial;
+	int findkey;
 	char *d11;
+	char *smartcrypt;
 	char *syster;
 	int systeraudio;
 	int acp;
@@ -190,6 +201,10 @@ typedef struct {
 	/* Stereo NICAM audio */
 	double nicam_carrier;
 	double nicam_beta;
+	
+	/* DANCE audio */
+	double dance_carrier;
+	double dance_beta;
 	
 	/* AM audio */
 	double am_mono_carrier;
@@ -251,7 +266,7 @@ struct vid_t {
 	
 	_mod_fm_t fm_secam_cr;
 	_mod_fm_t fm_secam_cb;
-
+	
 	int fsc_flag_left;
 	int fsc_flag_width;
 	int16_t fsc_flag_level;
@@ -271,7 +286,6 @@ struct vid_t {
 	float ratio;
 	
 	/* Video filter */
-	int16_t *video_filter_taps;
 	fir_int16_t video_filter;
 	
 	/* Teletext state */
@@ -304,6 +318,11 @@ struct vid_t {
 	nicam_mod_t nicam;
 	int16_t nicam_buf[NICAM_AUDIO_LEN * 2];
 	size_t nicam_buf_len;
+	
+	/* DANCE audio state */
+	dance_mod_t dance;
+	int16_t dance_buf[DANCE_AUDIO_LEN * 2];
+	size_t dance_buf_len;
 	
 	/* AM Mono audio state */
 	_mod_am_t am_mono;
