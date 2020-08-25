@@ -69,6 +69,7 @@ typedef struct {
 	
 	char *date;			/* Broadcast date */
 	int vbioffset;		/* VBI offset */
+	_Bool ppv;
 } ng_mode_t;
 
 typedef struct {
