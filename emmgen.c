@@ -1,17 +1,19 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 int main(int argc, char const *argv[]) {
 
-
+	srand ( time(NULL) );
     unsigned int tmparray[73] = {0};
-		
+
 	unsigned char _15[30], _fd[30], _02[30], _ea[30], _9b[30];
 	unsigned char _49[30], _a1[30], _5e[30], _b6[30], _73[30];
 	unsigned char _xor;
     char xx[800];
 	bool start = 0;
 	bool error = 0;
-	
+
    	int idx = 0;
    	int i = 0;
    	FILE *fp = fopen(argv[1], "rt");
@@ -82,31 +84,41 @@ int main(int argc, char const *argv[]) {
 				break;
 		}
 
-	
-	
+
+
     _xor = 0;
-	
+
 	for(int i=5;i<26;i++){
 		_xor = _02[i] ^ _15[i] ^ _49[i] ^ _5e[i] ^ _73[i] ^ _9b[i] ^ _a1[i] ^ _b6[i] ^ _ea[i] ^ _fd[i];
 	}
 
 
 if(!_xor){
+//if((_15[18] != 0xFF) && (_15[19] != 0xFF) && (_15[20] != 0xFF)){
 	for(int i=17;i<26;i++)fprintf(emm,"0x%02x,",_15[i]);
 	for(int i=5;i<26;i++)fprintf(emm,"0x%02x,",_fd[i]);
 	for(int i=5;i<26;i++)fprintf(emm,"0x%02x,",_02[i]);
 	for(int i=5;i<26;i++)fprintf(emm,"0x%02x,",_ea[i]);	
 	fprintf(emm,"\t /* Provider: %02x */ \n",_49[8]);
+	//}
+//if((_49[18] != 0xFF) && (_49[19] != 0xFF) && (_49[20] != 0xFF)){
 	for(int i=17;i<26;i++)fprintf(emm,"0x%02x,",_49[i]);
 	for(int i=5;i<26;i++)fprintf(emm,"0x%02x,",_a1[i]);
 	for(int i=5;i<26;i++)fprintf(emm,"0x%02x,",_5e[i]);
 	for(int i=5;i<26;i++)fprintf(emm,"0x%02x,",_b6[i]);
-	fprintf(emm,"\t /* Provider: %02x */ \n",_49[9]);	
-}	
+	fprintf(emm,"\t /* Provider: %02x */ \n",_49[9]);
 	
+	for(int i = 5;i<26;i++){
+		_73[i] = 0;
+		_9b[i] = 0;
+	}
+	
+//}
+}
+
 //	}
 
-	
+
 		if(feof(fp))break;
 
 	}
