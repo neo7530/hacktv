@@ -1,6 +1,6 @@
 /* hacktv - Analogue video transmitter for the HackRF                    */
 /*=======================================================================*/
-/* Copyright 2019 Philip Heron <phil@sanslogic.co.uk>                    */
+/* Copyright 2020 Philip Heron <phil@sanslogic.co.uk>                    */
 /*                                                                       */
 /* This program is free software: you can redistribute it and/or modify  */
 /* it under the terms of the GNU General Public License as published by  */
@@ -15,27 +15,22 @@
 /* You should have received a copy of the GNU General Public License     */
 /* along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
-#ifndef _ACP_H
-#define _ACP_H
+#ifndef _VITS_H
+#define _VITS_H
 
 #include <stdint.h>
 #include "video.h"
 
 typedef struct {
-	
-	int left[6];
-	
-	int16_t psync_level;
-	int16_t pagc_level;
-	
-	int psync_width;
-	int pagc_width;
-	
-} acp_t;
+	int width;
+	int lines;
+	int16_t *line[4];
+} vits_t;
 
-extern int acp_init(acp_t *s, vid_t *vid);
-extern void acp_free(acp_t *s);
-extern int acp_render_line(vid_t *s, void *arg, int nlines, vid_line_t **lines);
+extern int vits_init(vits_t *s, unsigned int sample_rate, int width, int lines, int16_t level);
+extern void vits_free(vits_t *s);
+
+extern int vits_render(vid_t *s, void *arg, int nlines, vid_line_t **lines);
 
 #endif
 

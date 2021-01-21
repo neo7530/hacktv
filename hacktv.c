@@ -52,7 +52,7 @@ static void _sigint_callback_handler(int signum)
 		exit(-1);
 	}
 	
-	_abort++;
+	_abort = 1;
 }
 
 /* RF sink callback handlers */
@@ -107,10 +107,12 @@ static void print_usage(void)
 		"      --findkey                  Attempt to find keys of PPV Videocrypt card.\n"
 		"      --syster <mode>            Enable Nagravision Syster scrambling. (PAL only)\n"
 		"      --d11 <mode>               Enable Discret 11 scrambling. (PAL only)\n"
-		"      --smartcrypt <mode>        Enable Smartcrypt scrambling (***INCOMPLETE***). (PAL only)\n"
-		"      --systeraudio              Invert the audio spectrum when using Syster, Smartcrypt or D11 scrambling.\n"
+		"      --systercnr <mode>        Enable Syster cut and rotate scrambling (***INCOMPLETE***). (PAL only)\n"
+		"      --systeraudio              Invert the audio spectrum when using Syster, Syster CnR or D11 scrambling.\n"
 		"      --acp                      Enable Analogue Copy Protection signal.\n"
+		"      --vits                     Enable VITS test signals.\n"
 		"      --filter                   Enable experimental VSB modulation filter.\n"
+		"      --nocolour                 Disable the colour subcarrier (PAL, SECAM, NTSC only).\n"
 		"      --noaudio                  Suppress all audio subcarriers.\n"
 		"      --nonicam                  Disable the NICAM subcarrier if present.\n"
 		"      --subtitles <stream idx>   Enable subtitles. Takes an optional argument.\n"
@@ -119,6 +121,11 @@ static void print_usage(void)
 		"      --double-cut               Enable D/D2-MAC double cut video scrambling.\n"
 		"      --eurocrypt <mode>         Enable Eurocrypt conditional access for D/D2-MAC.\n"
 		"      --scramble-audio           Scramble audio data when using D/D2-MAC modes.\n"
+		"      --chid <id>                Set the channel ID (D/D2-MAC).\n"
+		"      --key-table-1              Set permutation key table 1 in Syster.\n"
+		"      --key-table-2              Set permutation key table 2 in Syster.\n"
+		"      --offset <value>           Add a frequency offset in Hz (Complex modes only).\n"
+		"      --passthru <file>          Read and add an int16 complex signal.\n"
 		"\n"
 		"Input options\n"
 		"\n"
@@ -204,6 +211,8 @@ static void print_usage(void)
 		"  240           = No colour, 25 fps, 240 lines, unmodulated (real)\n"
 		"  30-am         = No colour, 12.5 fps, 30 lines, AM (complex)\n"
 		"  30            = No colour, 12.5 fps, 30 lines, unmodulated (real)\n"
+		"  nbtv-am       = No colour, 12.5 fps, 32 lines, AM (complex)\n"
+		"  nbtv          = No colour, 12.5 fps, 32 lines, unmodulated (real)\n"
 		"  apollo-fsc-fm = Field sequential colour, 30/1.001 fps, 525 lines, FM (complex)\n"
 		"                  1.25 MHz FM audio\n"
 		"  apollo-fsc    = Field sequential colour, 30/1.001 fps, 525 lines, unmodulated\n"
@@ -313,18 +322,17 @@ static void print_usage(void)
 		"Another video scrambling system used in the 1990s in Europe. The video lines\n"
 		"are vertically shuffled within a field.\n"
 		"\n"
-		"hacktv supports the following modes:\n"
+		"hacktv supports the following modes (number in brackets indicates the permutation table):\n"
 		"\n"
-		"  premiere-fa     = A valid Premiere 'key' is required to decode - free access.\n"
-		"  premiere-ca     = A valid Premiere 'key' is required to decode - subscription level access.\n"
-		"  cfrfa           = A valid Canal+ France 'key' is required to decode - free access. \n"
-		"  cfrca           = A valid Canal+ France 'key' is required to decode - subscription level access.\n"
-		"  cplfa           = A valid Canal+ Poland 'key' is required to decode - free access.\n"
-		"  cesfa           = A valid Canal+ Spain 'key' is required to decode - free access.\n"
-		"  ntvfa           = A valid HTB+ Russia 'key' is required to decode - free access.\n"
+		"  premiere-fa     = (1) A valid Premiere 'key' is required to decode - free access.\n"
+		"  premiere-ca     = (1) A valid Premiere 'key' is required to decode - subscription level access.\n"
+		"  cfrfa           = (2) A valid Canal+ France 'key' is required to decode - free access. \n"
+		"  cfrca           = (2) A valid Canal+ France 'key' is required to decode - subscription level access.\n"
+		"  cplfa           = (1) A valid Canal+ Poland 'key' is required to decode - free access.\n"
+		"  cesfa           = (1) A valid Canal+ Spain 'key' is required to decode - free access.\n"
+		"  ntvfa           = (2) A valid HTB+ Russia 'key' is required to decode - free access.\n"
 		"\n"
-		"Syster is only compatible with 625 line PAL modes and does not currently work\n"
-		"with most hardware.\n"
+		"By default, PAL providers use permutation table 1 and SECAM ones use table 2.\n"
 		"\n"
 		"Discret 11\n"
 		"\n"
@@ -352,39 +360,50 @@ static void print_usage(void)
 		"  tvs         = (S) A valid TVS (Denmark) card is required to decode.\n"
 		"  rdv         = (S) A valid RDV card is required to decode.\n"
 		"  nrk         = (S) A valid NRK card is required to decode.\n"
+		"  cplus       = (3DES) A valid Canal+ Nordic card is required to decode.\n"
+		"  tv3update   = (M) Autoupdate mode with included PIC/EEPROM files.\n"
 		"\n"
 		"MultiMac style cards can also be used.\n"
 		"\n"
 	);
 }
 
-#define _OPT_TELETEXT       1000
-#define _OPT_WSS            1001
-#define _OPT_VIDEOCRYPT     1002
-#define _OPT_VIDEOCRYPT2    1003
-#define _OPT_VIDEOCRYPTS    1004
-#define _OPT_SYSTER         1005
-#define _OPT_SYSTERAUDIO    1006
-#define _OPT_EUROCRYPT      1007
-#define _OPT_ACP            1008
-#define _OPT_FILTER         1009
-#define _OPT_NOAUDIO        1010
-#define _OPT_NONICAM        1011
-#define _OPT_SINGLE_CUT     1012
-#define _OPT_DOUBLE_CUT     1013
-#define _OPT_SCRAMBLE_AUDIO 1014
-#define _OPT_LOGO           2000
-#define _OPT_TIMECODE       2001
-#define _OPT_DISCRET        2002
-#define _OPT_ENABLE_EMM     2003
-#define _OPT_DISABLE_EMM    2004
-#define _OPT_SHOW_ECM       2005
-#define _OPT_SUBTITLES      2006
-#define _OPT_SMARTCRYPT     2007
-#define _OPT_LETTERBOX      2008
-#define _OPT_PILLARBOX      2009
-#define _OPT_SHOWSERIAL     2010
-#define _OPT_FINDKEY        2011
+enum {
+	_OPT_TELETEXT = 1000,
+	_OPT_WSS,
+	_OPT_VIDEOCRYPT,
+	_OPT_VIDEOCRYPT2,
+	_OPT_VIDEOCRYPTS,
+	_OPT_SYSTER,
+	_OPT_SYSTERAUDIO,
+	_OPT_EUROCRYPT,
+	_OPT_ACP,
+	_OPT_VITS,
+	_OPT_FILTER,
+	_OPT_NOCOLOUR,
+	_OPT_NOAUDIO,
+	_OPT_NONICAM,
+	_OPT_SINGLE_CUT,
+	_OPT_DOUBLE_CUT,
+	_OPT_SCRAMBLE_AUDIO,
+	_OPT_CHID,
+	_OPT_LOGO,
+	_OPT_TIMECODE,
+	_OPT_DISCRET,
+	_OPT_ENABLE_EMM,
+	_OPT_DISABLE_EMM,
+	_OPT_SHOW_ECM,
+	_OPT_SUBTITLES,
+	_OPT_SMARTCRYPT,
+	_OPT_LETTERBOX,
+	_OPT_PILLARBOX,
+	_OPT_SHOWSERIAL,
+	_OPT_FINDKEY,
+	_OPT_SYSTER_KT1,
+	_OPT_SYSTER_KT2,
+	_OPT_OFFSET,
+	_OPT_PASSTHRU,
+};
 
 int main(int argc, char *argv[])
 {
@@ -413,16 +432,27 @@ int main(int argc, char *argv[])
 		{ "double-cut",     no_argument,       0, _OPT_DOUBLE_CUT },
 		{ "eurocrypt",      required_argument, 0, _OPT_EUROCRYPT },
 		{ "scramble-audio", no_argument,       0, _OPT_SCRAMBLE_AUDIO },
-		{ "key",            required_argument, 0, 'k'},
 		{ "syster",         required_argument, 0, _OPT_SYSTER },
+		{ "key-table-1",    no_argument,       0, _OPT_SYSTER_KT1 },
+		{ "key-table-2",    no_argument,       0, _OPT_SYSTER_KT2 },
 		{ "d11",            required_argument, 0, _OPT_DISCRET },
-		{ "smartcrypt",     required_argument, 0, _OPT_SMARTCRYPT },
+		{ "systercnr",     required_argument, 0, _OPT_SMARTCRYPT },
 		{ "systeraudio",    no_argument,       0, _OPT_SYSTERAUDIO },
 		{ "acp",            no_argument,       0, _OPT_ACP },
+		{ "vits",           no_argument,       0, _OPT_VITS },
 		{ "filter",         no_argument,       0, _OPT_FILTER },
 		{ "subtitles",      optional_argument, 0, _OPT_SUBTITLES },
+		{ "nocolour",       no_argument,       0, _OPT_NOCOLOUR },
+		{ "nocolor",        no_argument,       0, _OPT_NOCOLOUR },
 		{ "noaudio",        no_argument,       0, _OPT_NOAUDIO },
 		{ "nonicam",        no_argument,       0, _OPT_NONICAM },
+		{ "single-cut",     no_argument,       0, _OPT_SINGLE_CUT },
+		{ "double-cut",     no_argument,       0, _OPT_DOUBLE_CUT },
+		{ "eurocrypt",      required_argument, 0, _OPT_EUROCRYPT },
+		{ "scramble-audio", no_argument,       0, _OPT_SCRAMBLE_AUDIO },
+		{ "chid",           required_argument, 0, _OPT_CHID },
+		{ "offset",         required_argument, 0, _OPT_OFFSET },
+		{ "passthru",       required_argument, 0, _OPT_PASSTHRU },
 		{ "frequency",      required_argument, 0, 'f' },
 		{ "amp",            no_argument,       0, 'a' },
 		{ "gain",           required_argument, 0, 'x' },
@@ -470,15 +500,17 @@ int main(int argc, char *argv[])
 	s.eurocrypt = NULL;
 	s.syster = NULL;
 	s.d11 = NULL;
-	s.smartcrypt = NULL;
+	s.systercnr = NULL;
 	s.systeraudio = 0;
 	s.acp = 0;
+	s.vits = 0;
 	s.filter = 0;
-	s.subtitles = 0;
+	s.nocolour = 0;
 	s.noaudio = 0;
 	s.nonicam = 0;
 	s.scramble_video = 0;
 	s.scramble_audio = 0;
+	s.chid = -1;
 	s.frequency = 0;
 	s.amp = 0;
 	s.gain = 0;
@@ -489,9 +521,10 @@ int main(int argc, char *argv[])
 	s.enableemm = 0;
 	s.disableemm = 0;
 	s.showecm = 0;
+	s.subtitles = 0;
 	
 	opterr = 0;
-	while((c = getopt_long(argc, argv, "o:m:s:D:G:irvf:al:g:A:t:p:k:", long_options, &option_index)) != -1)
+	while((c = getopt_long(argc, argv, "o:m:s:D:G:irvf:al:g:A:t:p:", long_options, &option_index)) != -1)
 	{
 		switch(c)
 		{
@@ -644,14 +677,22 @@ int main(int argc, char *argv[])
 			s.syster = strdup(optarg);
 			break;
 			
+		case _OPT_SYSTER_KT1: /* --key-table-1 */
+			s.scramble_video = 1;
+			break;
+		
+		case _OPT_SYSTER_KT2: /* --key-table-2 */
+			s.scramble_video = 2;
+			break;
+			
 		case _OPT_DISCRET: /* --d11 */
 			free(s.d11);
 			s.d11 = strdup(optarg);
 			break;
 		
-		case _OPT_SMARTCRYPT: /* --smartcrypt */
-			free(s.smartcrypt);
-			s.smartcrypt = strdup(optarg);
+		case _OPT_SMARTCRYPT: /* --systercnr */
+			free(s.systercnr);
+			s.systercnr = strdup(optarg);
 			break;
 			
 		case _OPT_SYSTERAUDIO: /* --systeraudio */
@@ -661,7 +702,11 @@ int main(int argc, char *argv[])
 		case _OPT_ACP: /* --acp */
 			s.acp = 1;
 			break;
-	
+		
+		case _OPT_VITS: /* --vits */
+			s.vits = 1;
+			break;
+			
 		case _OPT_FILTER: /* --filter */
 			s.filter = 1;
 			break;
@@ -678,7 +723,7 @@ int main(int argc, char *argv[])
 			free(s.logo);
 			s.logo = strdup(optarg);
 			break;
-				
+			
 		case _OPT_TIMECODE: /* --timestamp */
 			s.timestamp = 1;
 			break;
@@ -687,9 +732,8 @@ int main(int argc, char *argv[])
 			s.position = atof(optarg);
 			break;
 			
-		case 'k': /* -k, --key */
-			fprintf(stderr, "\nERROR: key option has been deprecated. Please see help text for details.\n\n");
-			return(0);
+		case _OPT_NOCOLOUR: /* --nocolour / --nocolor */
+			s.nocolour = 1;
 			break;
 		
 		case _OPT_NOAUDIO: /* --noaudio */
@@ -715,6 +759,19 @@ int main(int argc, char *argv[])
 		
 		case _OPT_SCRAMBLE_AUDIO: /* --scramble-audio */
 			s.scramble_audio = 1;
+			break;
+		
+		case _OPT_CHID: /* --chid <id> */
+			s.chid = strtol(optarg, NULL, 0);
+			break;
+		
+		case _OPT_OFFSET: /* --offset <value Hz> */
+			s.offset = (int64_t) strtod(optarg, NULL);
+			break;
+		
+		case _OPT_PASSTHRU: /* --passthru <path> */
+			free(s.passthru);
+			s.passthru = strdup(optarg);
 			break;
 		
 		case 'f': /* -f, --frequency <value> */
@@ -817,6 +874,16 @@ int main(int argc, char *argv[])
 	if(s.interlace)
 	{
 		vid_conf.interlace = 1;
+	}
+	
+	if(s.nocolour)
+	{
+		if(vid_conf.colour_mode == VID_PAL ||
+		   vid_conf.colour_mode == VID_SECAM ||
+		   vid_conf.colour_mode == VID_NTSC)
+		{
+			vid_conf.colour_mode = VID_NONE;
+		}
 	}
 	
 	if(s.noaudio > 0)
@@ -1036,7 +1103,7 @@ int main(int argc, char *argv[])
 		vid_conf.systeraudio = s.systeraudio;
 	}
 
-	if(s.syster)
+	if(s.syster || s.systercnr)
 	{
 		if(vid_conf.lines != 625 && vid_conf.colour_mode != VID_PAL)
 		{
@@ -1051,24 +1118,7 @@ int main(int argc, char *argv[])
 		}
 		
 		vid_conf.syster = s.syster;
-		vid_conf.systeraudio = s.systeraudio;
-	}
-
-	if(s.smartcrypt)
-	{
-		if(vid_conf.lines != 625 && vid_conf.colour_mode != VID_PAL)
-		{
-			fprintf(stderr, "Smartcrypt is only compatible with 625 line PAL modes.\n");
-			return(-1);
-		}
-		
-		if(vid_conf.videocrypt || vid_conf.videocrypt2 || vid_conf.videocrypts || vid_conf.d11)
-		{
-			fprintf(stderr, "Using multiple scrambling modes is not supported.\n");
-			return(-1);
-		}
-		
-		vid_conf.smartcrypt = s.smartcrypt;
+		vid_conf.systercnr = s.systercnr;
 		vid_conf.systeraudio = s.systeraudio;
 	}
 	
@@ -1111,6 +1161,31 @@ int main(int argc, char *argv[])
 		vid_conf.subtitles = s.subtitles;
 	}
 	
+	if(s.vits)
+	{
+		if(vid_conf.type != VID_RASTER_625 &&
+		   vid_conf.type != VID_RASTER_525)
+		{
+			fprintf(stderr, "VITS is only currently supported for 625 and 525 line raster modes.\n");
+			return(-1);
+		}
+		
+		vid_conf.vits = 1;
+	}
+	
+	if(vid_conf.type == VID_MAC && s.chid >= 0)
+	{
+		vid_conf.chid = (uint16_t) s.chid;
+	}
+	
+	if(s.filter)
+	{
+		vid_conf.vfilter = 1;
+	}
+	
+	vid_conf.offset = s.offset;
+	vid_conf.passthru = s.passthru;
+	
 	/* Setup video encoder */
 	r = vid_init(&s.vid, s.samplerate, &vid_conf);
 	if(r != VID_OK)
@@ -1120,11 +1195,6 @@ int main(int argc, char *argv[])
 	}
 	
 	vid_info(&s.vid);
-	
-	if(s.filter)
-	{
-		vid_init_filter(&s.vid);
-	}
 	
 	if(strcmp(s.output_type, "hackrf") == 0)
 	{
@@ -1198,8 +1268,8 @@ int main(int argc, char *argv[])
 			
 			if(r != HACKTV_OK)
 			{
-				vid_free(&s.vid);
-				return(-1);
+				/* Error opening this source. Move to the next */
+				continue;
 			}
 			
 			while(!_abort)

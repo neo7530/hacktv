@@ -64,7 +64,7 @@ typedef struct {
 	int repeat;
 	int verbose;
 	char *d11;
-	char *smartcrypt;
+	char *systercnr;
 	char *teletext;
 	char *logo;
 	char *wss;
@@ -79,8 +79,10 @@ typedef struct {
 	int systeraudio;
 	char *eurocrypt;
 	int acp;
+	int vits;
 	int filter;
 	int subtitles;
+	int nocolour;
 	int noaudio;
 	int nonicam;
 	int scramble_video;
@@ -95,6 +97,9 @@ typedef struct {
 	uint32_t enableemm;
 	uint32_t disableemm;
 	int showecm;
+	int chid;
+	int64_t offset;
+	char *passthru;
 	
 	/* Video encoder state */
 	vid_t vid;

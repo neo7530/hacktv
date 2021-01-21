@@ -18,7 +18,27 @@ warrant inclusions into original source.
 
 I will try and keep this as up to date as possible with official releases.
 
-**All credit for original code goes to author.**
+**All credit for original code goes to author (fsphil)**
+
+2021-01-06
+A much improved Syster cut and rotate implemention (credit to fsphil).
+Allow combining Syster line shuffling and cut and rotate to operate simultaneously.
+
+2020-12-16
+Addeed a very rudimentary Syster "cut and rotate" mode. Only works on Premiere decoders.
+  Run with --systercnr at multiples of Syster line sampling rate, such as 17750000 (4x 4437500).
+
+Removed references to "Smartcrypt" - a similar cut and rotate system but likely not what this is.
+
+2020-11-06:
+Added option to specify Syster permutation table to use.
+
+2020-10-23:
+A few changes to Eurocrypt, including the addition of EMMs for Eurocrypt-M. 
+
+To test it, program your card with the newly supplied Multimac PIC files
+and run hacktv using Eurocrypt mode "tv3update". The card will update 
+within 30 seconds.
 
 2020-08-05:
 Added HTB+ Russia for Syster
@@ -197,6 +217,14 @@ apt-get install libhackrf-dev libavutil-dev libavdevice-dev libswresample-dev li
 apt-get install hacktv
 
 
+WARNING
+
+The hackrf is not designed to be connected directly to AV equipment and could
+be damaged by, or cause damage to, your receiver. Please ensure no DC voltages
+or control signals are sent back into the hackrf, and that the RF power levels
+out of the hackrf are not too high for your receiver.
+
+
 INSTALL
 
 make
@@ -217,6 +245,15 @@ $ hacktv -f 551250000 -m i -g 47 --teletext demo.tti test
 # Download and transmit teletext pages from the Teefax service
 $ svn checkout http://teastop.plus.com/svn/teletext/ teefax
 $ hacktv -f 551250000 -m i -g 47 --teletext teefax test
+
+# Transmit two channels simultaneously on UHF channel 68 and 69 (PAL I)
+$ hacktv -s 20000000 --offset -6.75e6 --level 0.5 --filter -o - test | hacktv -s 20000000 -f 854e6 --offset 1.25e6 --level 0.5 --passthru /dev/stdin -g 47 --filter test
+
+
+LINKS
+
+https://github.com/captainjack64/hacktv - Fork of hacktv with support for additional scrambling systems
+https://github.com/steeviebops/jhacktv-gui - A cross platform GUI for hacktv written in Java
 
 
 -Philip Heron <phil@sanslogic.co.uk>
